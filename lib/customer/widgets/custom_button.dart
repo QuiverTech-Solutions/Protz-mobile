@@ -97,7 +97,11 @@ class CustomButton extends StatelessWidget {
 
     Widget buttonChild = Text(
       text,
-      style: TextStyleHelper.instance.bodyTextPoppins,
+      style: TextStyleHelper.instance.bodyTextPoppins.copyWith(
+        color: effectiveTextColor,
+        fontSize: effectiveFontSize,
+        fontWeight: effectiveFontWeight,
+      ),
       textAlign: TextAlign.center,
     );
 
@@ -113,6 +117,7 @@ class CustomButton extends StatelessWidget {
       button = OutlinedButton(
         onPressed: onPressed,
         style: OutlinedButton.styleFrom(
+          
           backgroundColor: effectiveBackgroundColor,
           side: BorderSide(
             color: effectiveBorderColor,
@@ -138,6 +143,7 @@ class CustomButton extends StatelessWidget {
       button = ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
+          
           backgroundColor: effectiveBackgroundColor,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -160,6 +166,7 @@ class CustomButton extends StatelessWidget {
       button = TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(
+        
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(effectiveBorderRadius),
           ),
