@@ -214,9 +214,13 @@ class _AccountScreenState extends State<AccountScreen> {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.logout, color: Color(0xFF086788)),
+            icon: const Icon(
+              Icons.logout,
+              color: Color(0xFF086788),
+            ),
             onPressed: () {
               // TODO: Logout
+              context.pushReplacementNamed(AppRouteNames.login);
             },
           ),
         ],

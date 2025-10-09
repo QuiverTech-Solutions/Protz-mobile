@@ -260,6 +260,7 @@ class _TowingServicesDashboardScreenState extends State<TowingServicesDashboardS
             children: [
               Expanded(
                 child: CustomButton(
+                  padding: EdgeInsets.symmetric(horizontal: 10),
                   text: 'View Balance',
                   onPressed: () {},
                   backgroundColor: appTheme.white_A700,
