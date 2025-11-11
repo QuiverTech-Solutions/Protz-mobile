@@ -33,6 +33,7 @@ export '../../customer/screens/acount_screens/add_card_screen.dart';
 // Provider Screens
 // Service Provider Screens
 export '../../service_provider/screens/document_verification_screen.dart';
+export '../../service_provider/screens/wallet_setup_screen.dart';
 
 // Admin Screens
 // TODO: Add admin screens when created
@@ -98,6 +99,7 @@ class AppRoutes {
   static const String providerProfile = '/provider/profile';
   static const String documents = '/provider/documents';
   static const String availability = '/provider/availability';
+  static const String providerWalletSetup = '/provider/wallet/setup';
   
   // Admin Routes
   static const String adminDashboard = '/admin';
@@ -178,6 +180,7 @@ class AppRouteNames {
   static const String providerProfile = 'provider-profile';
   static const String documents = 'documents';
   static const String availability = 'availability';
+  static const String providerWalletSetup = 'provider-wallet-setup';
   
   // Admin Route Names
   static const String adminDashboard = 'admin-dashboard';
