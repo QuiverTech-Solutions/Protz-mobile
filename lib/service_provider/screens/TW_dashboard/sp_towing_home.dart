@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 //
 
 import '../../../customer/core/utils/image_constant.dart';
 import '../../../customer/theme/text_style_helper.dart';
+import '../../../shared/utils/pages.dart';
 import '../../../shared/widgets/custom_image_view.dart';
 import '../../core/app_export.dart';
 //import '../../routes/app_routes.dart';
@@ -11,6 +13,7 @@ import '../../../shared/widgets/dashboard_recent_orders.dart';
 import '../../../shared/models/service_request.dart';
 import '../../../shared/models/service_provider.dart';
 import '../../../customer/core/utils/size_utils.dart' as cus_size;
+import '../../widgets/provider_status_toggle.dart';
 //
 
 
@@ -35,6 +38,7 @@ class _SpTowingHomeState
   int _currentNavIndex = 0;
 
   late ServiceType _selectedService;
+  bool _isOnline = true;
 
   @override
   void initState() {
@@ -108,9 +112,41 @@ class _SpTowingHomeState
           radius: BorderRadius.circular(ResponsiveExtension(20).h),
         ),
         SizedBox(width: ResponsiveExtension(8).h),
-        Text(
-          'Welcome, Provider',
-          style: TextStyleHelper.instance.title18MediumPoppins,
+        SizedBox(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Welcome, Iyad',
+                textAlign: TextAlign.left,
+                style: TextStyleHelper.instance.title18MediumPoppins,
+              ),
+              Text(
+                'Let’s do some deliveries today!',
+                style: TextStyleHelper.instance.body12RegularPoppins,
+              ),
+            ],
+          ),
+        ),
+        Spacer(),
+        IconButton(
+          icon: Icon(Icons.notifications),
+          padding: EdgeInsets.only(left: ResponsiveExtension(12).h),
+          onPressed: () {context.push(AppRoutes.notifications);},
+        ),
+        ProviderStatusToggle(
+          isOnline: _isOnline,
+          onChanged: (value) {
+            setState(() {
+              _isOnline = value;
+            });
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(value ? 'Status: Online' : 'Status: Offline'),
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          },
         ),
       ],
     );
