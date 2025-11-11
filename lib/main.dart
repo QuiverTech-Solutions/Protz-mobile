@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'shared/utils/app_router.dart';
-import 'auth/services/new_auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
