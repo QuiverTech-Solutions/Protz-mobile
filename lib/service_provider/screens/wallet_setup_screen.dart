@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/app_export.dart';
 import '../widgets/sp_primary_button.dart';
+import '../widgets/sp_success_toast.dart';
 
 class ProtzWalletSetupScreen extends StatefulWidget {
   const ProtzWalletSetupScreen({super.key});
@@ -69,8 +70,16 @@ class _ProtzWalletSetupScreenState extends State<ProtzWalletSetupScreen> {
         _focusNodes.first.requestFocus();
         return;
       }
-      // TODO: Hook to actual route (e.g., provider home) when available
-      Navigator.of(context).maybePop();
+      // Show success toast, then navigate away
+      showSPSuccessToast(
+        context,
+        title: 'Success!',
+        subtitle: 'You have successfully set your wallet PIN.',
+        caption: 'You will now be redirected',
+        durationMs: 1800,
+      ).then((_) {
+        Navigator.of(context).maybePop();
+      });
     }
   }
 
@@ -338,5 +347,5 @@ class _PinBox extends StatelessWidget {
         ),
       ),
     );
-  }
+}
 }
