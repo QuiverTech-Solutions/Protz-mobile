@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../shared/utils/pages.dart';
 import '../../core/app_export.dart';
 //import '../../routes/app_routes.dart';
 import '../../widgets/custom_image_view.dart';
@@ -13,8 +14,15 @@ import '../../widgets/dashboard_recent_orders.dart';
 import '../../../shared/widgets/dashboard_wallet_card.dart';
 
 
+enum ServiceType { towing, water }
+
 class TowingServicesDashboardScreen extends ConsumerStatefulWidget {
-  const TowingServicesDashboardScreen({super.key});
+  const TowingServicesDashboardScreen({
+    super.key,
+    this.initialService = ServiceType.towing,
+  });
+
+  final ServiceType initialService;
 
   @override
   ConsumerState<TowingServicesDashboardScreen> createState() =>
@@ -24,6 +32,14 @@ class TowingServicesDashboardScreen extends ConsumerStatefulWidget {
 class _TowingServicesDashboardScreenState
     extends ConsumerState<TowingServicesDashboardScreen> {
   int _currentNavIndex = 0;
+
+  late ServiceType _selectedService;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedService = widget.initialService;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +89,21 @@ class _TowingServicesDashboardScreenState
           setState(() {
             _currentNavIndex = index;
           });
+          // Keep navigation behavior consistent with the water dashboard
+          switch (index) {
+            case 0:
+              // Home - already here
+              break;
+            case 1:
+              context.push(AppRoutes.history);
+              break;
+            case 2:
+              context.push(AppRoutes.chatInbox);
+              break;
+            case 3:
+              context.push(AppRoutes.accountSettings);
+              break;
+          }
         },
       ),
     );
@@ -89,34 +120,51 @@ class _TowingServicesDashboardScreenState
       child: Row(
         children: [
           Expanded(
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 10.h, vertical: 12.h),
-              decoration: BoxDecoration(
-                color: appTheme.light_blue_900,
-                borderRadius: BorderRadius.circular(20.h),
-              ),
-              child: Text(
-                'Towing Services',
-                style: TextStyleHelper.instance.title16MediumPoppins
-                    .copyWith(color: appTheme.white_A700),
-                textAlign: TextAlign.center,
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedService = ServiceType.towing);
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.h, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: _selectedService == ServiceType.towing
+                      ? appTheme.light_blue_900
+                      : appTheme.white_A700,
+                  borderRadius: BorderRadius.circular(20.h),
+                ),
+                child: Text(
+                  'Towing Services',
+                  style: TextStyleHelper.instance.title16MediumPoppins.copyWith(
+                    color: _selectedService == ServiceType.towing
+                        ? appTheme.white_A700
+                        : appTheme.light_blue_900,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
           ),
           Expanded(
-            child: Builder(
-              builder: (context) => GestureDetector(
-                onTap: () {
-                  context.pushReplacementNamed('water_delivery_screen');
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
-                  child: Text(
-                    'Water Delivery',
-                    style: TextStyleHelper.instance.title16MediumPoppins
-                        .copyWith(color: appTheme.light_blue_900),
-                    textAlign: TextAlign.center,
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedService = ServiceType.water);
+              },
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: _selectedService == ServiceType.water
+                      ? appTheme.light_blue_900
+                      : appTheme.white_A700,
+                  borderRadius: BorderRadius.circular(20.h),
+                ),
+                child: Text(
+                  'Water Delivery',
+                  style: TextStyleHelper.instance.title16MediumPoppins.copyWith(
+                    color: _selectedService == ServiceType.water
+                        ? appTheme.white_A700
+                        : appTheme.light_blue_900,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -150,7 +198,10 @@ class _TowingServicesDashboardScreenState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         //DashboardWalletCard(walletInfo: dashboardData.wallet),
-        _buildTowVehicleCard(),
+        if (_selectedService == ServiceType.towing)
+          _buildTowVehicleCard()
+        else
+          _buildOrderWaterCard(),
         DashboardRecentOrders(recentOrders: dashboardData.recentOrders),
       ],
     );
@@ -181,6 +232,39 @@ class _TowingServicesDashboardScreenState
             ),
             Text(
               'Tow A Vehicle',
+              style: TextStyleHelper.instance.title16MediumPoppins,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOrderWaterCard() {
+    return GestureDetector(
+      onTap: () {
+        context.go(AppRoutes.waterDeliveryScreen1);
+      },
+      child: Container(
+        width: double.infinity,
+        margin: EdgeInsets.only(top: 32.h),
+        padding: EdgeInsets.symmetric(vertical: 16.h),
+        decoration: BoxDecoration(
+          color: appTheme.white_A700,
+          border: Border.all(color: appTheme.light_blue_50, width: 4.h),
+          borderRadius: BorderRadius.circular(12.h),
+        ),
+        child: Column(
+          spacing: 6.h,
+          children: [
+            CustomImageView(
+              imagePath: ImageConstant.imgGroup1,
+              height: 62.h,
+              width: 140.h,
+              fit: BoxFit.cover,
+            ),
+            Text(
+              'Order Water Delivery',
               style: TextStyleHelper.instance.title16MediumPoppins,
             ),
           ],
