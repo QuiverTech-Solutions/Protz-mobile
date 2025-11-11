@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../core/app_export.dart';
-import '../../shared/screens/notifications_screen.dart';
+import '../../customer/core/app_export.dart';
+import '../screens/notifications_screen.dart';
 
 class NotificationOrderWidget extends StatelessWidget {
   final NotificationData notification;

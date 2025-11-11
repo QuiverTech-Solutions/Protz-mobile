@@ -5,12 +5,12 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/utils/pages.dart';
 import '../../core/app_export.dart';
 //import '../../routes/app_routes.dart';
-import '../../widgets/custom_image_view.dart';
+import '../../../shared/widgets/custom_image_view.dart';
 import '../../../shared/widgets/custom_bottom_nav_bar.dart';
 import '../../../shared/providers/dashboard_provider.dart';
 import '../../../shared/models/dashboard_data.dart';
-import '../../widgets/dashboard_header_section.dart';
-import '../../widgets/dashboard_recent_orders.dart';
+import '../../../shared/widgets/dashboard_header_section.dart';
+import '../../../shared/widgets/dashboard_recent_orders.dart';
 import '../../../shared/widgets/dashboard_wallet_card.dart';
 
 
