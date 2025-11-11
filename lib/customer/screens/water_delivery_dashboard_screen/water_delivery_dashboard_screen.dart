@@ -4,9 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../shared/utils/pages.dart';
 import '../../core/app_export.dart';
 //import '../../routes/app_routes.dart';
-import '../../../shared/screens/widgets/custom_button.dart';
-import '../../../shared/screens/widgets/custom_image_view.dart';
-import '../../../shared/screens/widgets/custom_service_card.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_image_view.dart';
+import '../../widgets/custom_service_card.dart';
 import '../../../shared/widgets/custom_bottom_nav_bar.dart';
 
 class WaterDeliveryDashboard extends StatefulWidget {

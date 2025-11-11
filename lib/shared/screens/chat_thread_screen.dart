@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'widgets/call_options_popup.dart';
-import 'widgets/attachment_options_popup.dart';
-import 'widgets/user_options_bottom_sheet.dart';
+import '../../customer/widgets/call_options_popup.dart';
+import '../../customer/widgets/attachment_options_popup.dart';
+import '../../customer/widgets/user_options_bottom_sheet.dart';
 
 class ChatThreadScreen extends StatefulWidget {
   final String contactName;

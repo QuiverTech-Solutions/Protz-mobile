@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../customer/core/app_export.dart';
-import 'widgets/notification_order_widget.dart';
+import '../../customer/widgets/notification_order_widget.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
