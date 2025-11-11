@@ -63,7 +63,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
               switch (index) {
                 case 0:
                   // Home - navigate to home screen
-                  context.go('/towing_service_screen');
+                  context.go(AppRouteNames.customerHome);
                   break;
                 case 1:
                   // Orders - navigate to orders screen

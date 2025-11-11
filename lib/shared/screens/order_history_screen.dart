@@ -60,7 +60,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               switch (index) {
                 case 0:
                   // Home - navigate to home screen
-                  context.go('/towing_service_screen');
+                  context.go(AppRouteNames.customerHome);
                   break;
                 case 1:
                   // Orders - already on orders screen
