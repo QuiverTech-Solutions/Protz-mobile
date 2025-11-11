@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:protz/customer/core/utils/size_utils.dart';
-import 'package:protz/customer/widgets/custom_service_card.dart';
+import 'package:protz/shared/screens/widgets/custom_service_card.dart';
 import 'package:protz/shared/models/service_request.dart';
 import 'package:protz/customer/theme/text_style_helper.dart';
 import 'package:protz/customer/theme/theme_helper.dart';

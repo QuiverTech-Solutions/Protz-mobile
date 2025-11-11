@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/app_export.dart';
 import '../../../auth/widgets/auth_text_field.dart';
-import '../../widgets/custom_button.dart';
+import '../../../shared/screens/widgets/custom_button.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../auth/widgets/auth_text_field.dart';
-import '../../widgets/account_verification_popup.dart';
+import '../../../shared/screens/widgets/account_verification_popup.dart';
 
 class AddMobileMoneyScreen extends StatefulWidget {
   const AddMobileMoneyScreen({super.key});
