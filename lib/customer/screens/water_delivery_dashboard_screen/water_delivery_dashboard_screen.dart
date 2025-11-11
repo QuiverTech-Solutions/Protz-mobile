@@ -190,98 +190,13 @@ class _WaterDeliveryDashboardState extends State<WaterDeliveryDashboard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildWalletCard(),
+        //_buildWalletCard(),
         _buildOrderWaterCard(),
         _buildRecentOrdersSection(),
       ],
     );
   }
 
-  Widget _buildWalletCard() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 14.h),
-      decoration: BoxDecoration(
-        color: appTheme.light_blue_900,
-        border: Border.all(color: appTheme.light_blue_50, width: 4.h),
-        borderRadius: BorderRadius.circular(24.h),
-      ),
-      child: Column(
-        spacing: 10.h,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  spacing: 8.h,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Protz Wallet Account:',
-                      style: TextStyleHelper.instance.body14RegularPoppins,
-                    ),
-                    Text(
-                      'GHS ******',
-                      style: TextStyleHelper.instance.headline24MediumPoppins,
-                    ),
-                  ],
-                ),
-              ),
-              Column(
-                spacing: 8.h,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.h),
-                    decoration: BoxDecoration(
-                      color: appTheme.light_blue_50,
-                      borderRadius: BorderRadius.circular(8.h),
-                    ),
-                    child: Text(
-                      'Customer',
-                      style: TextStyleHelper.instance.label10RegularPoppins,
-                    ),
-                  ),
-                  Text(
-                    'John Williams',
-                    style: TextStyleHelper.instance.body14RegularPoppins,
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Row(
-            spacing: 12.h,
-            children: [
-              Expanded(
-                child: CustomButton(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  text: 'View Balance',
-                  onPressed: () {},
-                  backgroundColor: appTheme.white_A700,
-                  textColor: appTheme.light_blue_900,
-                  borderColor: appTheme.light_blue_900,
-                  isFullWidth: true,
-                ),
-              ),
-              Expanded(
-                child: CustomButton(
-                  text: 'Top up',
-                  onPressed: () {},
-                  backgroundColor: appTheme.white_A700,
-                  textColor: appTheme.light_blue_900,
-                  borderColor: appTheme.light_blue_900,
-                  isFullWidth: true,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildOrderWaterCard() {
     return GestureDetector(
