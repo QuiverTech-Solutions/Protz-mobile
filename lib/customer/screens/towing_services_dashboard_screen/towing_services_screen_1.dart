@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:protz/shared/utils/app_constants.dart';
-import '../../core/utils/size_utils.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
 import '../../../shared/utils/pages.dart';
 
 class TowingServicesScreen1 extends StatefulWidget {
-  const TowingServicesScreen1({Key? key}) : super(key: key);
+  const TowingServicesScreen1({super.key});
 
   @override
   State<TowingServicesScreen1> createState() => _TowingServicesScreen1State();
@@ -83,7 +81,7 @@ class _TowingServicesScreen1State extends State<TowingServicesScreen1> {
   }
 
   Widget _buildMapView() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Stack(

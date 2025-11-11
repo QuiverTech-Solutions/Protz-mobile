@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/app_export.dart';
 import '../../../shared/widgets/custom_bottom_nav_bar.dart';
-import '../../core/utils/size_utils.dart';
 import '../../../shared/utils/pages.dart';
 
 class AccountScreen extends StatefulWidget {
-  const AccountScreen({Key? key}) : super(key: key);
+  const AccountScreen({super.key});
 
   @override
   State<AccountScreen> createState() => _AccountScreenState();

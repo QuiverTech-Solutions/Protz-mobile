@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:protz/shared/utils/app_constants.dart';
 import '../../core/utils/size_utils.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
 
@@ -9,9 +8,9 @@ class TowingServicesScreen2 extends StatefulWidget {
   final String? pickupLocation;
   
   const TowingServicesScreen2({
-    Key? key,
+    super.key,
     this.pickupLocation,
-  }) : super(key: key);
+  });
 
   @override
   State<TowingServicesScreen2> createState() => _TowingServicesScreen2State();
@@ -87,7 +86,7 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
   }
 
   Widget _buildMapView() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Stack(
@@ -259,7 +258,7 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
   }
 
   Widget _buildHomeIndicator() {
-    return Container(
+    return SizedBox(
       height: SizeUtils.height * 0.04,
       child: Center(
         child: Container(

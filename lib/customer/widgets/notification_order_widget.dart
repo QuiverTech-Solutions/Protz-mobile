@@ -7,10 +7,10 @@ class NotificationOrderWidget extends StatelessWidget {
   final VoidCallback? onTap;
 
   const NotificationOrderWidget({
-    Key? key,
+    super.key,
     required this.notification,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

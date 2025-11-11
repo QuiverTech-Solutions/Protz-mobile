@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:protz/shared/utils/app_constants.dart';
 import '../../core/utils/size_utils.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
 import '../../../shared/utils/pages.dart';
@@ -88,7 +87,7 @@ class _WaterDeliveryScreen1State extends State<WaterDeliveryScreen1> {
   }
 
   Widget _buildMapView() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       height: double.infinity,
       child: Stack(
@@ -252,7 +251,7 @@ class _WaterDeliveryScreen1State extends State<WaterDeliveryScreen1> {
   }
 
   Widget _buildHomeIndicator() {
-    return Container(
+    return SizedBox(
       height: SizeUtils.height * 0.04,
       child: Center(
         child: Container(

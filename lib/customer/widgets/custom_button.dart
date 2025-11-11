@@ -2,29 +2,27 @@ import 'package:flutter/material.dart';
 
 import '../core/app_export.dart';
 
-/**
- * CustomButton - A flexible and reusable button component
- * 
- * Supports various button styles including outlined, filled, and text-only variants
- * with customizable colors, borders, padding, and responsive sizing.
- * 
- * @param text - Button text content
- * @param onPressed - Callback function when button is pressed
- * @param width - Button width (null for auto-sizing)
- * @param height - Button height
- * @param backgroundColor - Background fill color
- * @param textColor - Text color
- * @param borderColor - Border color for outlined buttons
- * @param borderRadius - Corner radius for button shape
- * @param padding - Internal padding around text
- * @param fontSize - Text font size
- * @param fontWeight - Text font weight
- * @param borderWidth - Border thickness
- * @param isFullWidth - Whether button should take full available width
- */
+/// CustomButton - A flexible and reusable button component
+/// 
+/// Supports various button styles including outlined, filled, and text-only variants
+/// with customizable colors, borders, padding, and responsive sizing.
+/// 
+/// @param text - Button text content
+/// @param onPressed - Callback function when button is pressed
+/// @param width - Button width (null for auto-sizing)
+/// @param height - Button height
+/// @param backgroundColor - Background fill color
+/// @param textColor - Text color
+/// @param borderColor - Border color for outlined buttons
+/// @param borderRadius - Corner radius for button shape
+/// @param padding - Internal padding around text
+/// @param fontSize - Text font size
+/// @param fontWeight - Text font weight
+/// @param borderWidth - Border thickness
+/// @param isFullWidth - Whether button should take full available width
 class CustomButton extends StatelessWidget {
   const CustomButton({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.width,
@@ -38,7 +36,7 @@ class CustomButton extends StatelessWidget {
     this.fontWeight,
     this.borderWidth,
     this.isFullWidth = false,
-  }) : super(key: key);
+  });
 
   /// Button text content
   final String text;

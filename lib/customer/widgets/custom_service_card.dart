@@ -2,25 +2,22 @@ import 'package:flutter/material.dart';
 
 import '../core/app_export.dart';
 import 'custom_button.dart';
-import 'custom_image_view.dart';
 
-/** 
- * CustomServiceCard - A reusable service history card component that displays 
- * service information including title, date, locations, provider, and price.
- * Supports both interactive and non-interactive price display.
- * 
- * @param serviceTitle - The title of the service (e.g., "Towing Service")
- * @param date - The service date in string format
- * @param originLocation - Starting location of the service
- * @param destinationLocation - Ending location of the service  
- * @param serviceProvider - Name of the service provider
- * @param price - Price amount to display
- * @param onPricePressed - Optional callback for price interaction
- * @param margin - Optional margin around the card
- */
+/// CustomServiceCard - A reusable service history card component that displays 
+/// service information including title, date, locations, provider, and price.
+/// Supports both interactive and non-interactive price display.
+/// 
+/// @param serviceTitle - The title of the service (e.g., "Towing Service")
+/// @param date - The service date in string format
+/// @param originLocation - Starting location of the service
+/// @param destinationLocation - Ending location of the service  
+/// @param serviceProvider - Name of the service provider
+/// @param price - Price amount to display
+/// @param onPricePressed - Optional callback for price interaction
+/// @param margin - Optional margin around the card
 class CustomServiceCard extends StatelessWidget {
   const CustomServiceCard({
-    Key? key,
+    super.key,
     required this.serviceTitle,
     required this.date,
     required this.originLocation,
@@ -29,7 +26,7 @@ class CustomServiceCard extends StatelessWidget {
     required this.price,
     this.onPricePressed,
     this.margin,
-  }) : super(key: key);
+  });
 
   /// Title of the service being displayed
   final String serviceTitle;
