@@ -3,7 +3,7 @@ import 'package:json_annotation/json_annotation.dart';
 part 'user.g.dart';
 
 enum UserRole { 
-  @JsonValue('customer')
+  @JsonValue('user')
   customer, 
   @JsonValue('service_provider')
   serviceProvider, 

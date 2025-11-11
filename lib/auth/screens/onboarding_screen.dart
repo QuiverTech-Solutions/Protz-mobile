@@ -53,8 +53,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _getStarted() {
-    // Navigate to login screen after onboarding
-    context.go(AppRoutes.signup);
+    // Navigate to signup selection screen after onboarding
+    print('DEBUG: Navigating to signup selection screen');
+    print('DEBUG: AppRoutes.signupSelection = ${AppRoutes.signupSelection}');
+    context.go(AppRoutes.signupSelection);
   }
 
   @override

@@ -6,6 +6,9 @@ import '../services/new_auth_service.dart';
 import '../widgets/auth_text_field.dart';
 import '../../shared/utils/pages.dart';
 import '../../shared/models/user.dart';
+import '../../shared/exceptions/auth_exceptions.dart';
+import '../../shared/utils/error_handler.dart';
+import '../models/login_request.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -55,29 +58,89 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Call authentication service
-      final result = await _authService.login(
+      developer.log('LoginScreen: Creating login request for identifier: $identifier');
+
+      // Create LoginRequest object
+      final loginRequest = LoginRequest(
         username: identifier,
         password: password,
       );
 
+      developer.log('LoginScreen: Login request created: ${loginRequest.toJson()}');
+
+      // Format phone number if needed
+      String username = _isEmailLogin 
+          ? _emailController.text 
+          : _formatPhoneNumber(_phoneController.text);
+
+      // Call authentication service
+      final user = await _authService.login(
+        username: username,
+        password: _passwordController.text,
+      );
+
+      developer.log('LoginScreen: Login successful, user ID: ${user.id}');
+
       // Navigate to appropriate dashboard based on user type
-      UserRole userRole = _authService.currentUser?.role ?? UserRole.customer;
+      UserRole userRole = user.role;
       if (userRole == UserRole.customer) {
         context.go(AppRoutes.customerHome);
       } else {
         context.go(AppRoutes.providerHome);
       }
-    } catch (e) {
-      developer.log('Login error: $e');
+    } on AuthException catch (e) {
+      developer.log('LoginScreen: AuthException during login: ${e.message}');
       setState(() {
-        _errorMessage = 'An error occurred. Please try again.';
+        _errorMessage = ErrorHandler.getUserFriendlyMessage(e);
+      });
+    } catch (e) {
+      developer.log('LoginScreen: Unexpected error during login: $e');
+
+      String errorMessage = 'Login failed. Please try again.';
+      if (e.toString().contains('network') || e.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Connection timeout. Please try again.';
+      } else if (e.toString().contains('Invalid credentials')) {
+        errorMessage = 'Invalid email/phone or password. Please try again.';
+      }
+
+      setState(() {
+        _errorMessage = errorMessage;
       });
     } finally {
       setState(() {
         _isLoading = false;
       });
     }
+  }
+
+  String _formatPhoneNumber(String phoneNumber) {
+    // Remove all non-digit characters except '+'
+    String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // If it already starts with +233, return as is
+    if (cleanPhone.startsWith('+233')) {
+      return cleanPhone;
+    }
+    
+    // If it starts with 233, add the + prefix
+    if (cleanPhone.startsWith('233')) {
+      return '+$cleanPhone';
+    }
+    
+    // If it starts with 0, replace with +233
+    if (cleanPhone.startsWith('0') && cleanPhone.length >= 10) {
+      return '+233${cleanPhone.substring(1)}';
+    }
+    
+    // If it's just 9 digits, assume it's a Ghana number without country code
+    if (cleanPhone.length == 9) {
+      return '+233$cleanPhone';
+    }
+    
+    // Return as is if none of the above conditions match
+    return cleanPhone;
   }
 
   String? _validateInputs(String identifier, String password) {
@@ -94,8 +157,8 @@ class _LoginScreenState extends State<LoginScreen> {
     }
     
     if (_isEmailLogin) {
-      // Email validation
-      if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(identifier)) {
+      // Email validation - updated to allow + character
+      if (!RegExp(r'^[\w-.+]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(identifier)) {
         return 'Please enter a valid email address';
       }
     } else {
@@ -120,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Positioned(
               right: 0,
               top: MediaQuery.of(context).size.height * 0.1,
-              child: Container(
+              child: SizedBox(
                 width: 234,
                 height: MediaQuery.of(context).size.height * 0.8,
                 child: SvgPicture.asset(
@@ -134,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Container(
+                child: SizedBox(
                   width: 345,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -435,7 +498,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       
                       // Login button
-                      Container(
+                      SizedBox(
                         width: double.infinity,
                         height: 48,
                         child: ElevatedButton(

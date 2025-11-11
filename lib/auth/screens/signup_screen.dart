@@ -1,17 +1,23 @@
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
-import '../widgets/auth_text_field.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:protz/auth/models/register_request.dart';
+import '../widgets/phone_verification_dialog.dart';
 import '../services/new_auth_service.dart';
-import '../models/register_request.dart';
-import '../models/user_data.dart';
-import '../models/user_profile.dart';
 import '../../shared/exceptions/auth_exceptions.dart';
+import '../../shared/models/user.dart';
 import '../../shared/utils/error_handler.dart';
 import '../../shared/utils/pages.dart';
 
 class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+  final String userType;
+  
+  const SignUpScreen({
+    super.key,
+    this.userType = 'user',
+  });
 
   @override
   _SignUpScreenState createState() => _SignUpScreenState();
@@ -22,674 +28,605 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _confirmPasswordController =
-      TextEditingController();
-  final TextEditingController _dateOfBirthController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _emergencyContactNameController = TextEditingController();
-  final TextEditingController _emergencyContactPhoneController = TextEditingController();
-  
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
-  bool _agreeToTerms = false;
-  String? _nameError;
-  String? _emailError;
-  String? _phoneError;
-  String? _passwordError;
-  String? _confirmPasswordError;
-  String? _dateOfBirthError;
-  String? _addressError;
-  String? _emergencyContactNameError;
-  String? _emergencyContactPhoneError;
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
   String? _errorMessage;
-  String _selectedGender = 'Male';
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFE8F4F8), // Light blue background
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.5),
-                radius: 3.0, // very large radius for maximum blur
-                focalRadius: 0.0, // no focal point
-                colors: [
-                  Color.fromARGB(255, 153, 228, 253), // Very light blue-white
-                  Color(0xFFECF6F9), // Slightly lighter
-                  Color(0xFFF0F8FA), // Even lighter
-                  Color(0xFFF4FAFB), // Almost white with hint of blue
-                  Color(0xFFF8FCFD), // Nearly white
-                  Color(0xFFFBFDFE), // Almost pure white
-                  Color(0xFFFEFFFF), // Pure white
-                  Color(0xFFFFFFFF), // Pure white
-                ],
-                stops: [
-                  0.0,
-                  0.2,
-                  0.35,
-                  0.5,
-                  0.65,
-                  0.8,
-                  0.9,
-                  1.0
-                ], // Gradual transitions
-              ),
-            ),
-            height: MediaQuery.of(context).size.height -
-                MediaQuery.of(context).padding.top,
-            child: Column(
-              children: [
-                // Header section with title
-                Expanded(
-                  flex: 2,
-                  child: Container(
-                    width: double.infinity,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text(
-                          'Sign Up',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 28,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF2B2930),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Create your account to get\nstarted with our services',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            fontSize: 14,
-                            color: Color(0xFF605D64),
-                            height: 1.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // Form container with curved top
-                Expanded(
-                  flex: 6,
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      //color: Colors.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(200),
-                        topRight: Radius.circular(200),
-                      ),
-                      border: Border(
-                        top: BorderSide(
-                          style: BorderStyle.solid,
-                          color: const Color(0xFF086688),
-                          width: 5,
-                        ),
-                        left: BorderSide(
-                          color: const Color(0xFF086688),
-                          width: 5,
-                        ),
-                        right: BorderSide(
-                          color: const Color(0xFF086688),
-                          width: 5,
-                        ),
-                      ),
-                    ),
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 3, left: 3, right: 3),
-                      decoration: BoxDecoration(
-                        //color: Colors.white,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(200),
-                          topRight: Radius.circular(200),
-                        ),
-                        border: const Border(
-                          top: BorderSide(
-                            color: Color(0xFF086688),
-                            width: 5,
-                          ),
-                          left: BorderSide(
-                            color: Color(0xFF086688),
-                            width: 5,
-                          ),
-                          right: BorderSide(
-                            color: Color(0xFF086688),
-                            width: 5,
-                          ),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                            left: 32,
-                            right: 32,
-                            top: 100,
-                            bottom: 32,
-                            ),
-                        child: SingleChildScrollView(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 16),
-                          
-                              // Error message display
-                              if (_errorMessage != null)
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(12),
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.shade50,
-                                    border: Border.all(color: Colors.red.shade200),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    _errorMessage!,
-                                    style: TextStyle(
-                                      color: Colors.red.shade700,
-                                      fontSize: 14,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                ),
-                          
-                              // Name Field
-                              AuthTextField(
-                                controller: _nameController,
-                                label: 'Name',
-                                hintText: 'Name',
-                                keyboardType: TextInputType.name,
-                                textCapitalization: TextCapitalization.words,
-                                validator: _validateName,
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Email Field
-                              AuthTextField(
-                                controller: _emailController,
-                                label: 'Email',
-                                hintText: 'example@gmail.com',
-                                keyboardType: TextInputType.emailAddress,
-                                validator: _validateEmail,
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Phone Field
-                              AuthTextField(
-                                controller: _phoneController,
-                                label: 'Phone Number',
-                                hintText: '+1234567890',
-                                keyboardType: TextInputType.phone,
-                                validator: _validatePhone,
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Date of Birth Field
-                              GestureDetector(
-                                onTap: () => _selectDateOfBirth(context),
-                                child: AbsorbPointer(
-                                  child: AuthTextField(
-                                    controller: _dateOfBirthController,
-                                    label: 'Date of Birth',
-                                    hintText: 'Select your date of birth',
-                                    validator: _validateDateOfBirth,
-                                    suffixIcon: const Icon(Icons.calendar_today, color: Color(0xFF086688)),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Gender Field
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Gender',
-                                    style: TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w500,
-                                      color: Color(0xFF2B2930),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: const Color(0xFFE0E0E0)),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: DropdownButtonHideUnderline(
-                                      child: DropdownButton<String>(
-                                        value: _selectedGender,
-                                        isExpanded: true,
-                                        items: ['Male', 'Female', 'Other'].map((String value) {
-                                          return DropdownMenuItem<String>(
-                                            value: value,
-                                            child: Text(
-                                              value,
-                                              style: const TextStyle(
-                                                fontFamily: 'Poppins',
-                                                fontSize: 14,
-                                                color: Color(0xFF2B2930),
-                                              ),
-                                            ),
-                                          );
-                                        }).toList(),
-                                        onChanged: (String? newValue) {
-                                          setState(() {
-                                            _selectedGender = newValue!;
-                                          });
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Address Field
-                              AuthTextField(
-                                controller: _addressController,
-                                label: 'Address',
-                                hintText: 'Enter your address',
-                                keyboardType: TextInputType.streetAddress,
-                                validator: _validateAddress,
-                                maxLines: 2,
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Emergency Contact Name Field
-                              AuthTextField(
-                                controller: _emergencyContactNameController,
-                                label: 'Emergency Contact Name',
-                                hintText: 'Enter emergency contact name',
-                                keyboardType: TextInputType.name,
-                                textCapitalization: TextCapitalization.words,
-                                validator: _validateEmergencyContactName,
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Emergency Contact Phone Field
-                              AuthTextField(
-                                controller: _emergencyContactPhoneController,
-                                label: 'Emergency Contact Phone',
-                                hintText: '+1234567890',
-                                keyboardType: TextInputType.phone,
-                                validator: _validateEmergencyContactPhone,
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Password Field
-                              AuthTextField(
-                                controller: _passwordController,
-                                label: 'Password',
-                                hintText: '••••••••••',
-                                obscureText: true,
-                                validator: _validatePassword,
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Re-enter Password Field
-                              AuthTextField(
-                                controller: _confirmPasswordController,
-                                label: 'Re-enter Password',
-                                hintText: '••••••••••',
-                                obscureText: true,
-                                validator: _validateConfirmPassword,
-                              ),
-                          
-                              const SizedBox(height: 16),
-                          
-                              // Terms and Conditions Checkbox
-                              Row(
-                                children: [
-                                  Checkbox(
-                                    value: _agreeToTerms,
-                                    onChanged: (value) {
-                                      setState(() {
-                                        _agreeToTerms = value ?? false;
-                                      });
-                                    },
-                                    activeColor: const Color(0xFF086688),
-                                  ),
-                                  Expanded(
-                                    child: RichText(
-                                      text: TextSpan(
-                                        style: const TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontSize: 12,
-                                          color: Color(0xFF322F35),
-                                        ),
-                                        children: [
-                                          const TextSpan(text: 'I agree to the '),
-                                          TextSpan(
-                                            text: 'Terms & Conditions',
-                                            style: const TextStyle(
-                                              color: Color(0xFF086688),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () {
-                                                // Navigate to terms and conditions
-                                                context.push('/terms-conditions');
-                                              },
-                                          ),
-                                          const TextSpan(text: ' and '),
-                                          TextSpan(
-                                            text: 'Privacy Policy',
-                                            style: const TextStyle(
-                                              color: Color(0xFF086688),
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                            recognizer: TapGestureRecognizer()
-                                              ..onTap = () {
-                                                // Navigate to privacy policy
-                                                context.push('/privacy-policy');
-                                              },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                          
-                              // Sign Up Button
-                              SizedBox(
-                                //width: ,
-                                height: 50,
-                                child: Center(
-                                  child: ElevatedButton( 
-                                    onPressed: _isLoading ? null : _handleSignUp,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF086688),
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 16,
-                                        horizontal: 100,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(25),
-                                      ),
-                                      elevation: 0,
-                                      shadowColor: Colors.transparent,
-                                    ),
-                                    child: _isLoading
-                                        ? const SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              color: Colors.white,
-                                              strokeWidth: 2,
-                                            ),
-                                          )
-                                        : const Text(
-                                            'Sign Up',
-                                            style: TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                          
-                              // Login Link
-                              Center(
-                                child: RichText(
-                                  text: TextSpan(
-                                    style: const TextStyle(
-                                      fontFamily: 'Poppins',
-                                      fontSize: 12,
-                                      color: Color(0xFF322F35),
-                                    ),
-                                    children: [
-                                      const TextSpan(
-                                          text: "Already have an account? "),
-                                      WidgetSpan(
-                                        child: GestureDetector(
-                                          onTap: () {
-                                            // Navigate back to login screen
-                                            context.go(AppRoutes.login);
-                                          },
-                                          child: const Text(
-                                            'Login',
-                                            style: TextStyle(
-                                              fontFamily: 'Poppins',
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: Color(0xFF086688),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _handleSignUp() async {
-  // Clear previous error
-  setState(() {
-    _errorMessage = null;
-  });
-
-  if (!_validateInputs()) {
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    final nameParts = _nameController.text.trim().split(' ');
-    
-    // Parse date of birth to proper format (YYYY-MM-DD)
-    String formattedDateOfBirth = '';
-    if (_dateOfBirthController.text.isNotEmpty) {
-      final dateParts = _dateOfBirthController.text.split('/');
-      if (dateParts.length == 3) {
-        // Convert from DD/MM/YYYY to YYYY-MM-DD
-        formattedDateOfBirth = '${dateParts[2]}-${dateParts[1].padLeft(2, '0')}-${dateParts[0].padLeft(2, '0')}';
-      }
-    }
-    
-    // Create the register request with the correct flat structure
-    final registerRequest = RegisterRequest(
-      firstName: nameParts.isNotEmpty ? nameParts[0] : '',
-      lastName: nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '',
-      userType: 'user',
-      phoneNumber: _phoneController.text.trim(),
-      email: _emailController.text.trim(),
-      password: _passwordController.text,
-      dateOfBirth: formattedDateOfBirth.isNotEmpty ? formattedDateOfBirth : null,
-      gender: _selectedGender.toLowerCase(),
-      primaryAddress: _addressController.text.trim(),
-      emergencyContactName: _emergencyContactNameController.text.trim(),
-      emergencyContactPhone: _emergencyContactPhoneController.text.trim(),
-      profilePhotoUrl: null,
-      city: null,
-      state: null,
-      alternatePhone: null,
-      middleName: null,
-    );
-
-    final user = await _authService.register(registerRequest);
-
-    // Registration successful, navigate to OTP verification
-    if (mounted) {
-      context.go('${AppRoutes.otpVerification}?userId=${user.id}&phone=${user.phoneNumber}');
-    }
-  } on AuthException catch (e) {
-    setState(() {
-      _errorMessage = ErrorHandler.getUserFriendlyMessage(e);
-    });
-  } catch (e) {
-    setState(() {
-      _errorMessage = 'An unexpected error occurred. Please try again.';
-    });
-  } finally {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-}
-
-  bool _validateInputs() {
-    setState(() {
-      _nameError = _validateName(_nameController.text);
-      _emailError = _validateEmail(_emailController.text);
-      _phoneError = _validatePhone(_phoneController.text);
-      _dateOfBirthError = _validateDateOfBirth(_dateOfBirthController.text);
-      _addressError = _validateAddress(_addressController.text);
-      _emergencyContactNameError = _validateEmergencyContactName(_emergencyContactNameController.text);
-      _emergencyContactPhoneError = _validateEmergencyContactPhone(_emergencyContactPhoneController.text);
-      _passwordError = _validatePassword(_passwordController.text);
-      _confirmPasswordError =
-          _validateConfirmPassword(_confirmPasswordController.text);
-    });
-
-    return _nameError == null &&
-        _emailError == null &&
-        _phoneError == null &&
-        _dateOfBirthError == null &&
-        _addressError == null &&
-        _emergencyContactNameError == null &&
-        _emergencyContactPhoneError == null &&
-        _passwordError == null &&
-        _confirmPasswordError == null &&
-        _agreeToTerms;
-  }
-
-  String? _validateName(String? name) {
-    if (name == null || name.isEmpty) return 'Name is required';
-    if (name.length < 2) return 'Name must be at least 2 characters';
-    return null;
-  }
-
-  String? _validateEmail(String? email) {
-    if (email == null || email.isEmpty) return 'Email is required';
-    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
-      return 'Please enter a valid email';
-    }
-    return null;
-  }
-
-  String? _validatePhone(String? phone) {
-    if (phone == null || phone.isEmpty) return 'Phone number is required';
-    // Remove all non-digit characters for validation
-    String digitsOnly = phone.replaceAll(RegExp(r'[^\d]'), '');
-    if (digitsOnly.length < 10) return 'Phone number must be at least 10 digits';
-    return null;
-  }
-
-  String? _validateDateOfBirth(String? dateOfBirth) {
-    if (dateOfBirth == null || dateOfBirth.isEmpty) return 'Date of birth is required';
-    return null;
-  }
-
-  String? _validateAddress(String? address) {
-    if (address == null || address.isEmpty) return 'Address is required';
-    if (address.length < 10) return 'Please enter a complete address';
-    return null;
-  }
-
-  String? _validateEmergencyContactName(String? name) {
-    if (name == null || name.isEmpty) return 'Emergency contact name is required';
-    if (name.length < 2) return 'Name must be at least 2 characters';
-    return null;
-  }
-
-  String? _validateEmergencyContactPhone(String? phone) {
-    if (phone == null || phone.isEmpty) return 'Emergency contact phone is required';
-    // Remove all non-digit characters for validation
-    String digitsOnly = phone.replaceAll(RegExp(r'[^\d]'), '');
-    if (digitsOnly.length < 10) return 'Phone number must be at least 10 digits';
-    return null;
-  }
-
-  String? _validatePassword(String? password) {
-    if (password == null || password.isEmpty) return 'Password is required';
-    if (password.length < 6) return 'Password must be at least 6 characters';
-    return null;
-  }
-
-  String? _validateConfirmPassword(String? confirmPassword) {
-    if (confirmPassword == null || confirmPassword.isEmpty)
-      return 'Please confirm your password';
-    if (_passwordController.text != confirmPassword)
-      return 'Passwords do not match';
-    return null;
-  }
-
-  Future<void> _selectDateOfBirth(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().subtract(const Duration(days: 6570)), // 18 years ago
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now().subtract(const Duration(days: 6570)), // Must be at least 18
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF086688),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Color(0xFF2B2930),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        _dateOfBirthController.text = "${picked.day}/${picked.month}/${picked.year}";
-      });
-    }
-  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _dateOfBirthController.dispose();
-    _addressController.dispose();
-    _emergencyContactNameController.dispose();
-    _emergencyContactPhoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Back button
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => context.pop(),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        size: 24,
+                        color: Color(0xFF1E1E1E),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Main content
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+                    
+                    // Header
+                    const Text(
+                      'Sign Up',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 24,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF086788),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.userType == 'service_provider' 
+                          ? 'Sign up as a Service Provider'
+                          : 'Sign up as a Customer',
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF909090),
+                      ),
+                    ),
+                    const SizedBox(height: 40),
+                    
+                    // Error message
+                    if (_errorMessage != null)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(bottom: 20),
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade50,
+                          border: Border.all(color: Colors.red.shade200),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 12,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ),
+                    
+                    // Form fields
+                    Column(
+                      children: [
+                        // Full Name field
+                        _buildTextField(
+                          controller: _nameController,
+                          label: widget.userType == 'service_provider' 
+                              ? '*Full Name/Company Name'
+                              : '*Full Name',
+                          hintText: widget.userType == 'service_provider'
+                              ? 'Enter your full name or the name of your company'
+                              : 'Enter your full name',
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Phone Number field
+                        _buildTextField(
+                          controller: _phoneController,
+                          label: '*Phone Number',
+                          hintText: '0*********',
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Email field
+                        _buildTextField(
+                          controller: _emailController,
+                          label: '*Email',
+                          hintText: 'email@example.com',
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Create Password field
+                        _buildPasswordField(
+                          controller: _passwordController,
+                          label: '*Create a password',
+                          hintText: 'Enter your password',
+                          isVisible: _passwordVisible,
+                          onToggleVisibility: () {
+                            setState(() {
+                              _passwordVisible = !_passwordVisible;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 20),
+                        
+                        // Confirm Password field
+                        _buildPasswordField(
+                          controller: _confirmPasswordController,
+                          label: '*Confirm password',
+                          hintText: 'Repeat your password',
+                          isVisible: _confirmPasswordVisible,
+                          onToggleVisibility: () {
+                            setState(() {
+                              _confirmPasswordVisible = !_confirmPasswordVisible;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Sign Up button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleSignUp,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF086788),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Sign Up',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 24),
+                    
+                    // Continue with text
+                    const Text(
+                      'Continue with:',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Color(0xFF1E1E1E),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 8),
+                    
+                    // Social login buttons
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Google login button
+                        Container(
+                          width: 45,
+                          height: 45,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF585274).withOpacity(0.28),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'assets/images/google_logo.svg',
+                              width: 24,
+                              height: 24,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(width: 20),
+                        
+                        // Apple login button
+                        Container(
+                          width: 45,
+                          height: 45,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E1E1E),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFF585274).withOpacity(0.13),
+                              width: 0.8,
+                            ),
+                          ),
+                          child: Center(
+                            child: SvgPicture.asset(
+                              'assets/images/apple_logo.svg',
+                              width: 24,
+                              height: 25,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 40),
+                    
+                    // Login link
+                    RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 14,
+                          color: Color(0xFF322F35),
+                        ),
+                        children: [
+                          const TextSpan(text: 'Already have an account? '),
+                          TextSpan(
+                            text: 'Login',
+                            style: const TextStyle(
+                              color: Color(0xFF086688),
+                              decoration: TextDecoration.underline,
+                              decorationColor: Color(0xFF086688),
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                context.go(AppRoutes.login);
+                              },
+                          ),
+                        ],
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    TextInputType? keyboardType,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: Color(0xFF1E1E1E),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF909090).withOpacity(0.5),
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType: keyboardType,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF505050),
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFF505050),
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required String hintText,
+    required bool isVisible,
+    required VoidCallback onToggleVisibility,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 12,
+            fontWeight: FontWeight.w400,
+            color: Color(0xFF1E1E1E),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF909090).withOpacity(0.5),
+            ),
+          ),
+          child: TextField(
+            controller: controller,
+            obscureText: !isVisible,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: Color(0xFF505050),
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              hintStyle: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFF505050),
+              ),
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 10,
+              ),
+              suffixIcon: GestureDetector(
+                onTap: onToggleVisibility,
+                child: Container(
+                  width: 20,
+                  height: 20,
+                  margin: const EdgeInsets.all(14),
+                  child: Icon(
+                    isVisible ? Icons.visibility : Icons.visibility_off,
+                    size: 20,
+                    color: const Color(0xFF505050),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _handleSignUp() async {
+    developer.log('SignUpScreen: Starting registration process');
+    
+    // Clear previous error
+    setState(() {
+      _errorMessage = null;
+      _isLoading = true;
+    });
+
+    developer.log('SignUpScreen: Validating form fields');
+
+    // Basic validation
+    if (_nameController.text.trim().isEmpty) {
+      developer.log('SignUpScreen: Validation failed - Name is empty');
+      setState(() {
+        _errorMessage = 'Please enter your full name';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_phoneController.text.trim().isEmpty) {
+      developer.log('SignUpScreen: Validation failed - Phone is empty');
+      setState(() {
+        _errorMessage = 'Please enter your phone number';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_emailController.text.trim().isEmpty) {
+      developer.log('SignUpScreen: Validation failed - Email is empty');
+      setState(() {
+        _errorMessage = 'Please enter your email';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_passwordController.text.isEmpty) {
+      developer.log('SignUpScreen: Validation failed - Password is empty');
+      setState(() {
+        _errorMessage = 'Please enter a password';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_confirmPasswordController.text.isEmpty) {
+      developer.log('SignUpScreen: Validation failed - Confirm password is empty');
+      setState(() {
+        _errorMessage = 'Please confirm your password';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      developer.log('SignUpScreen: Validation failed - Passwords do not match');
+      setState(() {
+        _errorMessage = 'Passwords do not match';
+        _isLoading = false;
+      });
+      return;
+    }
+
+    developer.log('SignUpScreen: All validations passed, proceeding with registration');
+
+    try {
+      // Split name into first and last name
+      final nameParts = _nameController.text.trim().split(' ');
+      final firstName = nameParts.first;
+      final lastName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+      developer.log('SignUpScreen: Creating RegisterRequest with firstName: $firstName, lastName: $lastName, userType: ${widget.userType}');
+
+      final registerRequest = RegisterRequest(
+        firstName: firstName,
+        lastName: lastName,
+        userType: widget.userType,
+        phoneNumber: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        gender: 'male', // Default value, could be made configurable
+        profilePhotoUrl: 'https://example.com/default-avatar.png', // Default value
+      );
+
+      developer.log('SignUpScreen: RegisterRequest created: ${registerRequest.toJson()}');
+      developer.log('SignUpScreen: Calling AuthService.register()');
+
+      final user = await _authService.register(registerRequest);
+
+      developer.log('SignUpScreen: Registration successful, user ID: ${user.id}');
+
+      // Registration successful, show phone verification dialog
+      if (mounted) {
+        developer.log('SignUpScreen: Showing phone verification dialog');
+        _showPhoneVerificationDialog(user.id, user.phoneNumber);
+      }
+    } on AuthException catch (e) {
+      developer.log('SignUpScreen: AuthException during registration: ${e.message}');
+      developer.log('SignUpScreen: AuthException type: ${e.runtimeType}');
+      setState(() {
+        _errorMessage = ErrorHandler.getUserFriendlyMessage(e);
+      });
+    } catch (e, stackTrace) {
+      developer.log('SignUpScreen: Unexpected error during registration: $e');
+      developer.log('SignUpScreen: Error type: ${e.runtimeType}');
+      developer.log('SignUpScreen: Stack trace: $stackTrace');
+
+      String errorMessage = 'Registration failed. Please try again.';
+      if (e.toString().contains('network') || e.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your internet connection.';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = 'Connection timeout. Please try again.';
+      } else if (e.toString().contains('already exists')) {
+        errorMessage = 'An account with this email or phone already exists.';
+      }
+
+      setState(() {
+        _errorMessage = errorMessage;
+      });
+    } finally {
+      developer.log('SignUpScreen: Registration process completed, setting loading to false');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  void _showPhoneVerificationDialog(String userId, String phoneNumber) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return PhoneVerificationDialog(
+          phoneNumber: phoneNumber,
+          userId: userId,
+          onVerificationSuccess: () {
+            // Navigate to appropriate dashboard based on user type
+            final userRole = _authService.currentUser?.role ?? UserRole.customer;
+            if (userRole == UserRole.customer) {
+              context.go(AppRoutes.customerHome);
+            } else {
+              context.go(AppRoutes.providerHome);
+            }
+          },
+          onCancel: () {
+            // User cancelled verification, stay on signup screen
+            developer.log('SignUpScreen: Phone verification cancelled');
+          },
+        );
+      },
+    );
   }
 }

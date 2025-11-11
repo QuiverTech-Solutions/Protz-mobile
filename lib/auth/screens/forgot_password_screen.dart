@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import '../widgets/auth_text_field.dart';
-import '../../shared/utils/pages.dart';
 import '../services/new_auth_service.dart';
 
 
