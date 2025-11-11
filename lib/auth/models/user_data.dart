@@ -25,10 +25,10 @@ class UserData {
   final String address;
   
   @JsonKey(name: 'emergency_contact_name')
-  final String emergencyContactName;
+  final String? emergencyContactName;
   
   @JsonKey(name: 'emergency_contact_phone')
-  final String emergencyContactPhone;
+  final String? emergencyContactPhone;
   
   @JsonKey(name: 'user_type')
   final String userType;
@@ -55,8 +55,8 @@ class UserData {
     required this.dateOfBirth,
     required this.gender,
     required this.address,
-    required this.emergencyContactName,
-    required this.emergencyContactPhone,
+    this.emergencyContactName,
+    this.emergencyContactPhone,
     required this.userType,
     this.serviceType,
     this.vehicleType,
@@ -105,8 +105,8 @@ class UserData {
         dateOfBirth.hashCode ^
         gender.hashCode ^
         address.hashCode ^
-        emergencyContactName.hashCode ^
-        emergencyContactPhone.hashCode ^
+        (emergencyContactName?.hashCode ?? 0) ^
+        (emergencyContactPhone?.hashCode ?? 0) ^
         userType.hashCode ^
         serviceType.hashCode ^
         vehicleType.hashCode ^
