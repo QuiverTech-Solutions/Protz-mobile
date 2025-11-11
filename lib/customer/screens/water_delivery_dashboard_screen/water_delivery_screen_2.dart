@@ -4,9 +4,6 @@ import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../shared/utils/app_constants.dart';
 import '../../../shared/utils/pages.dart';
-import '../../core/utils/size_utils.dart';
-import '../../../shared/widgets/back_icon_button.dart';
-import '../../../shared/widgets/history_icon_button.dart';
 
 class WaterDeliveryScreen2 extends StatefulWidget {
   final String? pickupLocation;
@@ -27,7 +24,7 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
   String? selectedUrgency;
   String? selectedRequirement;
 
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
   @override

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import '../../../shared/utils/pages.dart';
 import '../../core/app_export.dart';
 import '../../../auth/widgets/auth_text_field.dart';
 import '../../widgets/custom_button.dart';
@@ -91,7 +90,7 @@ class _SecurityPasswordScreenState extends State<SecurityPasswordScreen> {
                     const SizedBox(height: 6),
                     Text(
                       'Select an option for 2FA.',
-                      style: TextStyleHelper.instance.body12RegularPoppins?.copyWith(
+                      style: TextStyleHelper.instance.body12RegularPoppins.copyWith(
                         color: appTheme.gray_900,
                       ),
                     ),
@@ -166,8 +165,12 @@ class _SecurityPasswordScreenState extends State<SecurityPasswordScreen> {
     String code() => otpControllers.map((c) => c.text).join();
 
     void disposeLocals() {
-      for (final c in otpControllers) c.dispose();
-      for (final n in focusNodes) n.dispose();
+      for (final c in otpControllers) {
+        c.dispose();
+      }
+      for (final n in focusNodes) {
+        n.dispose();
+      }
       timer?.cancel();
     }
 
@@ -203,7 +206,7 @@ class _SecurityPasswordScreenState extends State<SecurityPasswordScreen> {
                     method == TwoFactorMethod.email
                         ? 'Verify your email address to proceed.'
                         : 'Verify your phone number to proceed.',
-                    style: TextStyleHelper.instance.body12RegularPoppins?.copyWith(
+                    style: TextStyleHelper.instance.body12RegularPoppins.copyWith(
                       color: appTheme.gray_900,
                     ),
                     textAlign: TextAlign.center,
@@ -232,7 +235,7 @@ class _SecurityPasswordScreenState extends State<SecurityPasswordScreen> {
                     canResend
                         ? 'You can request a new code'
                         : 'Request code resend in ${resendTimer}s',
-                    style: TextStyleHelper.instance.label10RegularPoppins?.copyWith(
+                    style: TextStyleHelper.instance.label10RegularPoppins.copyWith(
                       color: appTheme.light_blue_900,
                     ),
                   ),
@@ -291,7 +294,7 @@ class _SecurityPasswordScreenState extends State<SecurityPasswordScreen> {
               const SizedBox(height: 8),
               Text(
                 'Turn on 2FA to give your account an extra layer of protection.',
-                style: TextStyleHelper.instance.body12RegularPoppins?.copyWith(
+                style: TextStyleHelper.instance.body12RegularPoppins.copyWith(
                   color: appTheme.gray_900,
                 ),
               ),
@@ -449,7 +452,7 @@ class _TwoFAOptionTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     detail,
-                    style: TextStyleHelper.instance.body12RegularPoppins?.copyWith(
+                    style: TextStyleHelper.instance.body12RegularPoppins.copyWith(
                       color: appTheme.light_blue_900,
                     ),
                   ),

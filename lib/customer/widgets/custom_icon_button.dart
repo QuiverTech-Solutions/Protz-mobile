@@ -3,24 +3,22 @@ import 'package:flutter/material.dart';
 import '../core/app_export.dart';
 import 'custom_image_view.dart';
 
-/**
- * A customizable icon button widget with consistent styling and border decoration.
- * Supports SVG icons, custom margins, and press callbacks while maintaining
- * a uniform appearance across the application.
- * 
- * @param imagePath - Path to the icon asset (SVG, PNG, etc.)
- * @param onPressed - Callback function executed when button is pressed
- * @param margin - Optional margin around the button
- * @param isEnabled - Whether the button is enabled or disabled
- */
+/// A customizable icon button widget with consistent styling and border decoration.
+/// Supports SVG icons, custom margins, and press callbacks while maintaining
+/// a uniform appearance across the application.
+/// 
+/// @param imagePath - Path to the icon asset (SVG, PNG, etc.)
+/// @param onPressed - Callback function executed when button is pressed
+/// @param margin - Optional margin around the button
+/// @param isEnabled - Whether the button is enabled or disabled
 class CustomIconButton extends StatelessWidget {
-  CustomIconButton({
-    Key? key,
+  const CustomIconButton({
+    super.key,
     required this.imagePath,
     this.onPressed,
     this.margin,
     this.isEnabled,
-  }) : super(key: key);
+  });
 
   /// Path to the icon asset
   final String imagePath;

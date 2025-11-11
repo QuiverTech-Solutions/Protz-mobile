@@ -108,7 +108,7 @@ class _WaterDeliveryDashboardState extends State<WaterDeliveryDashboard> {
           Expanded(
             child: GestureDetector(
               onTap: () {
-                context.pushReplacementNamed('towing_service_screen');
+                context.pushReplacementNamed(AppRouteNames.customerHome);
               },
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 10.h, vertical: 12.h),

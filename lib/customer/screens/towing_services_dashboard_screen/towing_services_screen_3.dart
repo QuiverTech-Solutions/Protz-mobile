@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
-import '../../core/utils/size_utils.dart';
 import '../../../shared/widgets/back_icon_button.dart';
 import '../../../shared/widgets/history_icon_button.dart';
 import '../../../shared/utils/pages.dart';
@@ -12,10 +11,10 @@ class TowingServicesScreen3 extends StatefulWidget {
   final String? destination;
 
   const TowingServicesScreen3({
-    Key? key,
+    super.key,
     this.pickupLocation,
     this.destination,
-  }) : super(key: key);
+  });
 
   @override
   State<TowingServicesScreen3> createState() => _TowingServicesScreen3State();
@@ -26,7 +25,7 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
   String? selectedUrgency;
   String? selectedRequirement;
 
-  List<File> _selectedImages = [];
+  final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
 
   @override

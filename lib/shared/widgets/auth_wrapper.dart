@@ -10,9 +10,9 @@ class AuthWrapper extends StatefulWidget {
   final Widget child;
   
   const AuthWrapper({
-    Key? key,
+    super.key,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<AuthWrapper> createState() => _AuthWrapperState();
@@ -79,6 +79,7 @@ class _AuthWrapperState extends State<AuthWrapper> {
         final publicRoutes = [
           AppRoutes.onboarding,
           AppRoutes.login,
+          AppRoutes.signupSelection,
           AppRoutes.signup,
           AppRoutes.otpVerification,
           AppRoutes.forgotPassword,

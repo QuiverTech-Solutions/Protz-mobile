@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../core/app_export.dart';
-import '../core/utils/size_utils.dart';
 import '../widgets/call_options_popup.dart';
 import '../widgets/attachment_options_popup.dart';
 import '../widgets/user_options_bottom_sheet.dart';
@@ -12,11 +10,11 @@ class ChatThreadScreen extends StatefulWidget {
   final String contactAvatar;
 
   const ChatThreadScreen({
-    Key? key,
+    super.key,
     required this.contactName,
     required this.contactSubtitle,
     required this.contactAvatar,
-  }) : super(key: key);
+  });
 
   @override
   State<ChatThreadScreen> createState() => _ChatThreadScreenState();

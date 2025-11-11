@@ -53,6 +53,10 @@ dependencies:
   
   # URL launcher for phone calls and external links
   url_launcher: ^6.2.5
+  
+  # State management
+  flutter_riverpod: ^2.4.9
+  riverpod_annotation: ^2.3.3
 
 dev_dependencies:
   flutter_test:
@@ -68,6 +72,9 @@ dev_dependencies:
   # JSON code generation
   json_serializable: ^6.7.1
   build_runner: ^2.4.7
+  
+  # Riverpod code generation
+  riverpod_generator: ^2.3.9
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

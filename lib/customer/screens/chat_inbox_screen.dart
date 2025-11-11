@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import '../../shared/utils/pages.dart';
 import '../core/app_export.dart';
 import '../core/utils/size_utils.dart';
-import '../../shared/utils/app_constants.dart';
 import '../../shared/widgets/custom_bottom_nav_bar.dart';
 class ChatInboxScreen extends StatefulWidget {
   const ChatInboxScreen({super.key});
