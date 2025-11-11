@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protz/customer/core/app_export.dart';
-import 'package:protz/customer/widgets/custom_image_view.dart';
+import 'package:protz/shared/widgets/custom_image_view.dart';
 import 'package:protz/shared/models/dashboard_data.dart';
 import 'package:protz/shared/utils/pages.dart';
 

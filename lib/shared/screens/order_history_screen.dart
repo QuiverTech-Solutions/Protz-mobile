@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../utils/pages.dart';
 import '../../customer/core/app_export.dart';
-import '../../customer/widgets/custom_service_card.dart';
+import '../widgets/custom_service_card.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
