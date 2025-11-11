@@ -17,7 +17,7 @@ import 'pages.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
-    initialLocation: AppRoutes.providerWalletSetup,
+    initialLocation:'/',
     debugLogDiagnostics: true,
     routes: [
       // Splash/Initial Route
