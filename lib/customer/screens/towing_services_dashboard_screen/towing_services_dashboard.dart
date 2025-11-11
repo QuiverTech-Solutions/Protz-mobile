@@ -10,7 +10,7 @@ import '../../../shared/providers/dashboard_provider.dart';
 import '../../../shared/models/dashboard_data.dart';
 import '../../widgets/dashboard_header_section.dart';
 import '../../widgets/dashboard_recent_orders.dart';
-import '../../widgets/dashboard_wallet_card.dart';
+import '../../../shared/widgets/dashboard_wallet_card.dart';
 
 
 class TowingServicesDashboardScreen extends ConsumerStatefulWidget {

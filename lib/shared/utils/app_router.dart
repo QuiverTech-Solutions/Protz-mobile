@@ -17,7 +17,7 @@ import 'pages.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
-    initialLocation: AppRoutes.documents,
+    initialLocation: AppRoutes.providerWalletSetup,
     debugLogDiagnostics: true,
     routes: [
       // Splash/Initial Route
@@ -344,6 +344,14 @@ class AppRouter {
             name: AppRouteNames.documents,
             pageBuilder: (context, state) => CustomTransitions.slideTransition(
               child: const DocumentVerificationScreen(),
+              state: state,
+            ),
+          ),
+          GoRoute(
+            path: 'wallet/setup',
+            name: AppRouteNames.providerWalletSetup,
+            pageBuilder: (context, state) => CustomTransitions.slideTransition(
+              child: const ProtzWalletSetupScreen(),
               state: state,
             ),
           ),
