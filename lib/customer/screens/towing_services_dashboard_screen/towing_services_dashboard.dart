@@ -149,7 +149,7 @@ class _TowingServicesDashboardScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        DashboardWalletCard(walletInfo: dashboardData.wallet),
+        //DashboardWalletCard(walletInfo: dashboardData.wallet),
         _buildTowVehicleCard(),
         DashboardRecentOrders(recentOrders: dashboardData.recentOrders),
       ],
