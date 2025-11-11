@@ -54,7 +54,7 @@ class _TowingServicesScreen1State extends State<TowingServicesScreen1> {
         slivers: [
           CustomSliverAppBar(
             title: 'Towing Services',
-            onBackPressed: () => context.go('/towing_service_screen'),
+            onBackPressed: () => context.go(AppRouteNames.customerHome),
             onHistoryPressed: () {
               context.push(AppRoutes.history);
             },
