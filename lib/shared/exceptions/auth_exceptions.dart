@@ -70,8 +70,8 @@ class NetworkException extends AuthException {
 
 /// Exception thrown when server returns an error
 class ServerException extends AuthException {
-  const ServerException(String message, {int? statusCode})
-      : super(message, code: 'SERVER_ERROR', statusCode: statusCode);
+  const ServerException(super.message, {super.statusCode})
+      : super(code: 'SERVER_ERROR');
 }
 
 /// Exception thrown when request validation fails
@@ -79,9 +79,9 @@ class ValidationException extends AuthException {
   final Map<String, List<String>>? fieldErrors;
 
   const ValidationException(
-    String message, {
+    super.message, {
     this.fieldErrors,
-  }) : super(message, code: 'VALIDATION_ERROR');
+  }) : super(code: 'VALIDATION_ERROR');
 }
 
 /// Exception thrown when rate limit is exceeded

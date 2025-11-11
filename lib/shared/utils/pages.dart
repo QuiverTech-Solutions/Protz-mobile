@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 export '../../auth/screens/splash_screen.dart';
 export '../../auth/screens/onboarding_screen.dart';
 export '../../auth/screens/login_screen.dart';
+export '../../auth/screens/signup_selection_screen.dart';
 export '../../auth/screens/signup_screen.dart';
 export '../../auth/screens/otp_verification_screen.dart';
 export '../../auth/screens/forgot_password_screen.dart';
@@ -30,14 +31,8 @@ export '../../customer/screens/acount_screens/add_card_screen.dart';
 // export '../../customer/screens/chat_screen.dart';
 
 // Provider Screens
-// TODO: Add provider screens when created
-// export '../../provider/screens/provider_home_screen.dart';
-// export '../../provider/screens/job_requests_screen.dart';
-// export '../../provider/screens/active_job_screen.dart';
-// export '../../provider/screens/earnings_screen.dart';
-// export '../../provider/screens/provider_profile_screen.dart';
-// export '../../provider/screens/documents_screen.dart';
-// export '../../provider/screens/availability_screen.dart';
+// Service Provider Screens
+export '../../service_provider/screens/document_verification_screen.dart';
 
 // Admin Screens
 // TODO: Add admin screens when created
@@ -67,9 +62,12 @@ export '../../customer/screens/acount_screens/add_card_screen.dart';
 class AppRoutes {
   // Authentication Routes
   static const String login = '/login';
+  static const String signupSelection = '/signup-selection';
   static const String signup = '/signup';
   static const String otpVerification = '/otp-verification';
   static const String forgotPassword = '/forgot-password';
+  static const String forgotPasswordOtp = '/forgot-password-otp';
+  static const String newPassword = '/new-password';
   
   // Onboarding Routes
   static const String onboarding = '/onboarding';
@@ -144,9 +142,12 @@ class AppRoutes {
 class AppRouteNames {
   // Authentication Route Names
   static const String login = 'login';
+  static const String signupSelection = 'signup-selection';
   static const String signup = 'signup';
   static const String otpVerification = 'otp-verification';
   static const String forgotPassword = 'forgot-password';
+  static const String forgotPasswordOtp = 'forgot-password-otp';
+  static const String newPassword = 'new-password';
   
   // Onboarding Route Names
   static const String onboarding = 'onboarding';

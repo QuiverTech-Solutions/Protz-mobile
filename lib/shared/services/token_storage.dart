@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
+import '../utils/app_constants.dart';
 
 class TokenStorage {
-  static const String _tokenKey = 'auth_token';
+  static const String _tokenKey = AppConstants.tokenKey;
   static const String _tokenTypeKey = 'token_type';
-  static const String _refreshTokenKey = 'refresh_token';
-  static const String _userKey = 'current_user';
+  static const String _refreshTokenKey = AppConstants.refreshTokenKey;
+  static const String _userKey = AppConstants.userKey;
   static const String _expiresAtKey = 'token_expires_at';
   
   static TokenStorage? _instance;
@@ -18,7 +19,68 @@ class TokenStorage {
   SharedPreferences? _prefs;
   
   Future<void> _ensureInitialized() async {
-    _prefs ??= await SharedPreferences.getInstance();
+    if (_prefs == null) {
+      if (kDebugMode) {
+        print('[TokenStorage] Initializing SharedPreferences...');
+      }
+      _prefs = await SharedPreferences.getInstance();
+      if (kDebugMode) {
+        print('[TokenStorage] SharedPreferences initialized successfully');
+      }
+      
+      // Migrate old keys to new keys
+      await _migrateOldKeys();
+    }
+  }
+  
+  /// Migrates old token keys to new standardized keys
+  Future<void> _migrateOldKeys() async {
+    if (_prefs == null) return;
+    
+    try {
+      // Old keys that might exist
+      const String oldUserKey = 'current_user';
+      const String oldTokenKey = 'access_token';
+      
+      if (kDebugMode) {
+        print('[TokenStorage] Checking for old keys to migrate...');
+        final allKeys = _prefs!.getKeys();
+        print('[TokenStorage] Current keys before migration: $allKeys');
+      }
+      
+      // Migrate user data if it exists with old key
+      if (_prefs!.containsKey(oldUserKey) && !_prefs!.containsKey(_userKey)) {
+        final userData = _prefs!.getString(oldUserKey);
+        if (userData != null) {
+          await _prefs!.setString(_userKey, userData);
+          await _prefs!.remove(oldUserKey);
+          if (kDebugMode) {
+            print('[TokenStorage] Migrated user data from $oldUserKey to $_userKey');
+          }
+        }
+      }
+      
+      // Migrate token if it exists with old key
+      if (_prefs!.containsKey(oldTokenKey) && !_prefs!.containsKey(_tokenKey)) {
+        final token = _prefs!.getString(oldTokenKey);
+        if (token != null) {
+          await _prefs!.setString(_tokenKey, token);
+          await _prefs!.remove(oldTokenKey);
+          if (kDebugMode) {
+            print('[TokenStorage] Migrated token from $oldTokenKey to $_tokenKey');
+          }
+        }
+      }
+      
+      if (kDebugMode) {
+        final allKeysAfter = _prefs!.getKeys();
+        print('[TokenStorage] Keys after migration: $allKeysAfter');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('[TokenStorage] Error during key migration: $e');
+      }
+    }
   }
   
   // Token management
@@ -31,6 +93,13 @@ class TokenStorage {
     try {
       await _ensureInitialized();
       
+      if (kDebugMode) {
+        print('[TokenStorage] Saving token to key: $_tokenKey');
+        print('[TokenStorage] Saving token - Type: $tokenType, Token: ${accessToken.substring(0, 20)}...');
+        print('[TokenStorage] Refresh token: ${refreshToken != null ? 'Present' : 'None'}');
+        print('[TokenStorage] Expires in: $expiresIn seconds');
+      }
+      
       await _prefs!.setString(_tokenKey, accessToken);
       await _prefs!.setString(_tokenTypeKey, tokenType);
       
@@ -41,10 +110,16 @@ class TokenStorage {
       if (expiresIn != null) {
         final expiresAt = DateTime.now().add(Duration(seconds: expiresIn));
         await _prefs!.setString(_expiresAtKey, expiresAt.toIso8601String());
+        if (kDebugMode) {
+          print('[TokenStorage] Token expires at: $expiresAt');
+        }
       }
       
       if (kDebugMode) {
-        print('Token saved successfully');
+        print('[TokenStorage] Token saved successfully');
+        // Verify the token was saved
+        final savedToken = _prefs!.getString(_tokenKey);
+        print('[TokenStorage] Verification - saved token: ${savedToken != null ? '${savedToken.substring(0, 20)}...' : 'null'}');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -57,7 +132,16 @@ class TokenStorage {
   Future<String?> getAccessToken() async {
     try {
       await _ensureInitialized();
-      return _prefs!.getString(_tokenKey);
+      final token = _prefs!.getString(_tokenKey);
+      if (kDebugMode) {
+        print('[TokenStorage] Getting access token from key: $_tokenKey');
+        print('[TokenStorage] Retrieved token: ${token != null ? '${token.substring(0, 20)}...' : 'null'}');
+        
+        // Debug: List all stored keys
+        final allKeys = _prefs!.getKeys();
+        print('[TokenStorage] All stored keys: $allKeys');
+      }
+      return token;
     } catch (e) {
       if (kDebugMode) {
         print('Error getting access token: $e');
@@ -69,7 +153,11 @@ class TokenStorage {
   Future<String?> getTokenType() async {
     try {
       await _ensureInitialized();
-      return _prefs!.getString(_tokenTypeKey);
+      final tokenType = _prefs!.getString(_tokenTypeKey);
+      if (kDebugMode) {
+        print('[TokenStorage] Getting token type: $tokenType');
+      }
+      return tokenType;
     } catch (e) {
       if (kDebugMode) {
         print('Error getting token type: $e');
@@ -213,12 +301,41 @@ class TokenStorage {
   // Get authorization header value
   Future<String?> getAuthorizationHeader() async {
     final token = await getAccessToken();
-    final tokenType = await getTokenType();
-    
     if (token == null || token.isEmpty) {
       return null;
     }
-    
-    return '${tokenType ?? 'Bearer'} $token';
+    // Use saved token_type from login per PROTZ API docs
+    final tokenType = await getTokenType();
+    // Normalize common scheme casing: default to 'Bearer' if absent
+    final scheme = (tokenType == null || tokenType.isEmpty)
+        ? 'Bearer'
+        : (tokenType.toLowerCase() == 'bearer' ? 'Bearer' : tokenType);
+    if (kDebugMode) {
+      print('[TokenStorage] Building Authorization header using scheme: $scheme');
+    }
+    return '$scheme $token';
+  }
+
+  // Build Cookie header string for browser-like auth
+  Future<String?> getCookieHeader() async {
+    try {
+      final token = await getAccessToken();
+      if (token == null || token.isEmpty) {
+        if (kDebugMode) {
+          print('[TokenStorage] No token available for Cookie header');
+        }
+        return null;
+      }
+      final cookie = 'access_token=$token';
+      if (kDebugMode) {
+        print('[TokenStorage] Building Cookie header: access_token=<redacted>');
+      }
+      return cookie;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error building Cookie header: $e');
+      }
+      return null;
+    }
   }
 }

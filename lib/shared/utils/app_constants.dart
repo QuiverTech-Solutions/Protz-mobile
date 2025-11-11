@@ -83,7 +83,7 @@ class AppConstants {
   static const int mapMarkerColorValue = 0xFFFF4757;
 
   // API Configuration
-  static const String baseUrl = 'https://api.protz.com';
+  static const String baseUrl = 'https://protz-d3f3c6008874.herokuapp.com/api/v1';
   static const String apiVersion = 'v1';
   static const Duration apiTimeout = Duration(seconds: 30);
 
@@ -94,8 +94,8 @@ class AppConstants {
   static const Duration tokenExpiryDuration = Duration(hours: 24);
 
   // User Roles
-  static const String customerRole = 'customer';
-  static const String providerRole = 'provider';
+  static const String customerRole = 'user';
+  static const String providerRole = 'service_provider';
   static const String adminRole = 'admin';
 
   // Service Types

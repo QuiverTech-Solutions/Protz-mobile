@@ -5,7 +5,7 @@ import '../services/new_auth_service.dart';
 import '../../shared/models/user.dart';
 
 class SplashScreen extends StatefulWidget {
-  const SplashScreen({Key? key}) : super(key: key);
+  const SplashScreen({super.key});
 
   @override
   State<SplashScreen> createState() => _SplashScreenState();

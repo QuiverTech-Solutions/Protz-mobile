@@ -5,23 +5,19 @@ import 'package:protz/customer/screens/chat_thread_screen.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_dashboard_screen.dart';
 import '../../customer/screens/acount_screens/account_screen.dart';
 import '../../customer/screens/acount_screens/delete_account_screen.dart';
-import '../../customer/screens/notifications_screen.dart';
 import '../../customer/screens/order_history_screen.dart';
 import '../../customer/screens/help_support_screen.dart';
 import '../../customer/screens/customer_service_chat_screen.dart';
 import '../../customer/screens/chat_inbox_screen.dart';
+import '../../auth/screens/new_password_screen.dart';
 
-import '../../auth/services/new_auth_service.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_screen_1.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_screen_2.dart';
-import '../../customer/screens/towing_services_dashboard_screen/towing_checkout.dart';
-import '../../shared/models/user.dart';
-import '../widgets/auth_wrapper.dart';
 import 'pages.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
-    initialLocation: '/towing_service_screen',
+    initialLocation: AppRoutes.documents,
     debugLogDiagnostics: true,
     routes: [
       // Splash/Initial Route
@@ -52,10 +48,21 @@ class AppRouter {
       ),
       
       GoRoute(
+        path: AppRoutes.signupSelection,
+        name: AppRouteNames.signupSelection,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: const SignupSelectionScreen(),
+          state: state,
+        ),
+      ),
+      
+      GoRoute(
         path: AppRoutes.signup,
         name: AppRouteNames.signup,
         pageBuilder: (context, state) => CustomTransitions.slideTransition(
-          child: const SignUpScreen(),
+          child: SignUpScreen(
+            userType: state.uri.queryParameters['userType'] ?? 'user',
+          ),
           state: state,
         ),
       ),
@@ -64,9 +71,9 @@ class AppRouter {
         path: AppRoutes.otpVerification,
         name: AppRouteNames.otpVerification,
         pageBuilder: (context, state) => CustomTransitions.slideTransition(
-          child: OTPVerificationScreen(
-            userId: state.uri.queryParameters['userId'] ?? '',
-            phoneNumber: state.uri.queryParameters['phone'],
+          child: OtpVerificationScreen(
+            // userId: state.uri.queryParameters['userId'] ?? '',
+            phoneNumber: state.uri.queryParameters['phone'] ?? '',
           ),
           state: state,
         ),
@@ -81,12 +88,35 @@ class AppRouter {
         ),
       ),
       
+      GoRoute(
+        path: AppRoutes.forgotPasswordOtp,
+        name: AppRouteNames.forgotPasswordOtp,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: OtpVerificationScreen(
+            phoneNumber: state.uri.queryParameters['phone'] ?? '',
+          ),
+          state: state,
+        ),
+      ),
+      
+      GoRoute(
+        path: AppRoutes.newPassword,
+        name: AppRouteNames.newPassword,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: NewPasswordScreen(
+            phoneNumber: state.uri.queryParameters['phone'] ?? '',
+            otpCode: state.uri.queryParameters['otp'] ?? '',
+          ),
+          state: state,
+        ),
+      ),
+      
       // Customer Routes
       GoRoute(
-        path: '/towing_service_screen'	,
-        name:'towing_service_screen',
+        path: AppRoutes.customerHome,
+        name: AppRouteNames.customerHome,
         pageBuilder: (context, state) => CustomTransitions.fadeTransition(
-          child: TowingServicesDashboardScreen(),
+          child: TowingServicesDashboardScreen(), // Default customer home screen
           state: state,
         ),
       ),
@@ -98,6 +128,9 @@ class AppRouter {
           state: state,
         ),
       ),
+
+      // Provider Routes
+      // Moved provider documents under nested providerHome route below to avoid duplicate path definitions
 
       // Account & Settings Screens
       GoRoute(
@@ -310,11 +343,7 @@ class AppRouter {
             path: 'documents',
             name: AppRouteNames.documents,
             pageBuilder: (context, state) => CustomTransitions.slideTransition(
-              child: const Scaffold(
-                body: Center(
-                  child: Text('Documents - Coming Soon'),
-                ),
-              ),
+              child: const DocumentVerificationScreen(),
               state: state,
             ),
           ),
