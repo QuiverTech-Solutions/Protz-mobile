@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../core/app_export.dart';
+import '../../customer/core/app_export.dart';
 
 class CustomerServiceChatScreen extends StatefulWidget {
   const CustomerServiceChatScreen({super.key});

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protz/customer/screens/towing_services_dashboard_screen/towing_services_dashboard.dart';
-import 'package:protz/customer/screens/chat_thread_screen.dart';
+import 'package:protz/shared/screens/chat_thread_screen.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_dashboard_screen.dart';
 import '../../customer/screens/acount_screens/account_screen.dart';
 import '../../customer/screens/acount_screens/delete_account_screen.dart';
-import '../../customer/screens/order_history_screen.dart';
-import '../../customer/screens/help_support_screen.dart';
-import '../../customer/screens/customer_service_chat_screen.dart';
-import '../../customer/screens/chat_inbox_screen.dart';
+import '../screens/order_history_screen.dart';
+import '../screens/help_support_screen.dart';
+import '../screens/customer_service_chat_screen.dart';
+import '../screens/chat_inbox_screen.dart';
 import '../../auth/screens/new_password_screen.dart';
 
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_screen_1.dart';

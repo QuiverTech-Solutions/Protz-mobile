@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../core/app_export.dart';
-import '../core/utils/size_utils.dart';
-import '../../shared/utils/pages.dart';
+import '../../customer/core/app_export.dart';
+import '../../customer/core/utils/size_utils.dart';
+import '../utils/pages.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});

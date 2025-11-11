@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../shared/utils/pages.dart';
-import '../core/app_export.dart';
-import '../widgets/custom_service_card.dart';
-import '../../shared/widgets/custom_bottom_nav_bar.dart';
+import '../utils/pages.dart';
+import '../../customer/core/app_export.dart';
+import 'widgets/custom_service_card.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});

@@ -24,7 +24,7 @@ export '../../customer/screens/towing_services_dashboard_screen/towing_checkout.
 // export '../../customer/screens/profile_screen.dart';
 export '../../customer/screens/acount_screens/profile_screen.dart';
 export '../../customer/screens/acount_screens/security_password_screen.dart';
-export '../../customer/screens/notifications_screen.dart';
+export '../screens/notifications_screen.dart';
 export '../../customer/screens/acount_screens/wallet_screen.dart';
 export '../../customer/screens/acount_screens/add_mobile_money_screen.dart';
 export '../../customer/screens/acount_screens/add_card_screen.dart';

@@ -3,7 +3,7 @@ import 'package:protz/customer/core/utils/size_utils.dart';
 import 'package:protz/shared/models/dashboard_data.dart';
 import 'package:protz/customer/theme/text_style_helper.dart';
 import 'package:protz/customer/theme/theme_helper.dart';
-import 'package:protz/customer/widgets/custom_button.dart';
+import 'package:protz/shared/screens/widgets/custom_button.dart';
 
 class DashboardWalletCard extends StatelessWidget {
   final WalletInfo walletInfo;
