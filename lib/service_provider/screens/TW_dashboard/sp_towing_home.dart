@@ -156,9 +156,72 @@ class _SpTowingHomeState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildStatsRow(),
+        SizedBox(height: ResponsiveExtension(20).h),
         _emergencyContactButton(),
         _buildRecentOrdersSection(),
       ],
+    );
+  }
+
+  Widget _buildStatsRow() {
+    return Row(
+      spacing: ResponsiveExtension(12).h,
+      children: [
+        Expanded(child: _buildMetricCard(3, 'Today’s Deliveries')),
+        Expanded(child: _buildMetricCard(1, 'Pending Orders')),
+        Expanded(child: _buildMetricCard(5, 'Completed Orders')),
+      ],
+    );
+  }
+
+  Widget _buildMetricCard(int count, String label) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: ResponsiveExtension(16).h,
+        vertical: ResponsiveExtension(20).h,
+      ),
+      decoration: BoxDecoration(
+        color: appTheme.white_A700,
+        border: Border.all(
+          color: appTheme.light_blue_50,
+          width: ResponsiveExtension(4).h,
+        ),
+        borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            '$count',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w500,
+              fontSize: ResponsiveExtension(28).fSize,
+              color: appTheme.light_blue_900,
+            ),
+          ),
+          SizedBox(height: ResponsiveExtension(8).h),
+          Container(
+            height: 1,
+            width: double.infinity,
+            color: appTheme.light_blue_50,
+          ),
+          SizedBox(height: ResponsiveExtension(8).h),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w400,
+              fontSize: ResponsiveExtension(12).fSize,
+              color: appTheme.gray_900,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -187,7 +250,6 @@ class _SpTowingHomeState
             width: ResponsiveExtension(48).h,
             fit: BoxFit.contain,
           ),
-          SizedBox(height: ResponsiveExtension(12).h),
           Text(
             'Emergency\nContact',
             textAlign: TextAlign.center,
