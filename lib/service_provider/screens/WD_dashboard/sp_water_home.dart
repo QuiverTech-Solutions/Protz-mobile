@@ -15,6 +15,7 @@ import '../../../shared/models/service_request.dart';
 import '../../../shared/models/service_provider.dart';
 import '../../../customer/core/utils/size_utils.dart' as cus_size;
 import '../../widgets/provider_status_toggle.dart';
+import '../../core/utils/nav_helper.dart';
 //
 
 
@@ -36,7 +37,7 @@ class SpWaterHome extends StatefulWidget {
 
 class _SpWaterHomeState
     extends State<SpWaterHome> {
-  int _currentNavIndex = 0;
+  final int _currentNavIndex = 0;
 
   late ServiceType _selectedService;
   bool _isOnline = true;
@@ -102,11 +103,9 @@ class _SpWaterHomeState
             label: 'Account',
           ),
         ],
-        currentIndex: _currentNavIndex,
+        currentIndex: 0,
         onItemSelected: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
+          ProviderNav.goToIndex(context, index, isWaterHome: true);
         },
       ),
     );

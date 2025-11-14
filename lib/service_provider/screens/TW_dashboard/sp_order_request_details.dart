@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../customer/core/utils/image_constant.dart';
-import '../../../customer/theme/text_style_helper.dart';
 import '../../../shared/utils/pages.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_image_view.dart';
