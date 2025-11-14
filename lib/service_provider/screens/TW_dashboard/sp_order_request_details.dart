@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../customer/core/utils/image_constant.dart';
 import '../../../customer/theme/text_style_helper.dart';
+import '../../../shared/utils/pages.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_image_view.dart';
 import '../../core/app_export.dart';
@@ -76,7 +77,7 @@ class SPOrderRequestDetails extends StatelessWidget {
                             backgroundColor: appTheme.light_blue_900,
                             textColor: appTheme.white_A700,
                             borderColor: appTheme.light_blue_900,
-                            onPressed: () { context.push('/provider/active-job'); },
+                            onPressed: () { context.push(AppRoutes.jobRequests); },
                             height: ResponsiveExtension(48).h,
                             isFullWidth: true,
                             borderRadius: ResponsiveExtension(12).h,
