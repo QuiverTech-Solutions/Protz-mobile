@@ -556,7 +556,7 @@ class _SpTowingHomeState
                         backgroundColor: appTheme.light_blue_900,
                         textColor: appTheme.white_A700,
                         borderColor: appTheme.light_blue_900,
-                        onPressed: () { Navigator.of(ctx).pop(); },
+                        onPressed: () { Navigator.of(ctx).pop(); context.push('/provider/request-details', extra: request); },
                         isFullWidth: true,
                       ),
                     ),
