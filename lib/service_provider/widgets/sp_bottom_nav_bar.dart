@@ -38,32 +38,37 @@ class SPBottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Container(
-        height: 88.h,
-        decoration: BoxDecoration(
-          color: backgroundColor,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24.h),
-            topRight: Radius.circular(24.h),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: elevation,
-              offset: const Offset(0, 0),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        SizeUtils.setScreenSize(constraints, MediaQuery.of(context).orientation);
+        return SafeArea(
+          top: false,
+          child: Container(
+            height: 88.h,
+            decoration: BoxDecoration(
+              color: backgroundColor,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(24.h),
+                topRight: Radius.circular(24.h),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: elevation,
+                  offset: const Offset(0, 0),
+                ),
+              ],
             ),
-          ],
-        ),
-        padding: EdgeInsets.fromLTRB(24, 12.h, 16, 28.h),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            for (int i = 0; i < items.length; i++) _buildItem(context, items[i], i),
-          ],
-        ),
-      ),
+            padding: EdgeInsets.fromLTRB(24, 12.h, 16, 12.h),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                for (int i = 0; i < items.length; i++) _buildItem(context, items[i], i),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -85,7 +90,7 @@ class SPBottomNavBar extends StatelessWidget {
 
     final Widget content = Container(
       width: 68,
-      height: 60.h,
+      height: 56.h,
       decoration: isActive ? activeDecoration : defaultDecoration,
       alignment: Alignment.center,
       child: Column(
@@ -94,11 +99,11 @@ class SPBottomNavBar extends StatelessWidget {
           IconTheme(
             data: IconThemeData(
               color: iconColor,
-              size: 24.h,
+              size: 22.h,
             ),
             child: SizedBox(
               width: 24,
-              height: 24.h,
+              height: 22.h,
               child: Center(child: iconWidget),
             ),
           ),
