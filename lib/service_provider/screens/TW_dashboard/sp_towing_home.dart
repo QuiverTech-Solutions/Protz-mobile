@@ -5,10 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../customer/core/utils/image_constant.dart';
 import '../../../customer/theme/text_style_helper.dart';
 import '../../../shared/utils/pages.dart';
+import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_image_view.dart';
 import '../../core/app_export.dart';
 //import '../../routes/app_routes.dart';
-import '../../../shared/widgets/custom_bottom_nav_bar.dart';
+import '../../widgets/sp_bottom_nav_bar.dart';
 import '../../../shared/widgets/dashboard_recent_orders.dart';
 import '../../../shared/models/service_request.dart';
 import '../../../shared/models/service_provider.dart';
@@ -73,13 +74,39 @@ class _SpTowingHomeState
           },
         ),
       ),
-      bottomNavigationBar: CustomBottomNavBar(
+      bottomNavigationBar: SPBottomNavBar(
+        items: const [
+          SPBottomNavItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          SPBottomNavItem(
+            icon: Icon(Icons.assignment_outlined),
+            activeIcon: Icon(Icons.assignment),
+            label: 'Requests',
+          ),
+          SPBottomNavItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Chats',
+          ),
+          SPBottomNavItem(
+            icon: Icon(Icons.account_balance_wallet_outlined),
+            activeIcon: Icon(Icons.account_balance_wallet),
+            label: 'Finances',
+          ),
+          SPBottomNavItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Account',
+          ),
+        ],
         currentIndex: _currentNavIndex,
-        onTap: (index) {
+        onItemSelected: (index) {
           setState(() {
             _currentNavIndex = index;
           });
-          
         },
       ),
     );
@@ -157,6 +184,8 @@ class _SpTowingHomeState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildStatsRow(),
+        SizedBox(height: ResponsiveExtension(12).h),
+        _buildPreviewPopupButton(),
         SizedBox(height: ResponsiveExtension(20).h),
         _emergencyContactButton(),
         _buildRecentOrdersSection(),
@@ -169,14 +198,15 @@ class _SpTowingHomeState
       spacing: ResponsiveExtension(12).h,
       children: [
         Expanded(child: _buildMetricCard(3, 'Today’s Deliveries')),
-        Expanded(child: _buildMetricCard(1, 'Pending Orders')),
-        Expanded(child: _buildMetricCard(5, 'Completed Orders')),
+        Expanded(child: _buildMetricCard(1, 'Today’s Earnings',money: true)),
+        Expanded(child: _buildMetricCard(5, 'Total Earnings',money: true)),
       ],
     );
   }
 
-  Widget _buildMetricCard(int count, String label) {
+  Widget _buildMetricCard(int amount, String label,{ bool money =false}) {
     return Container(
+      height: ResponsiveExtension(140).h,
       padding: EdgeInsets.symmetric(
         horizontal: ResponsiveExtension(16).h,
         vertical: ResponsiveExtension(20).h,
@@ -193,15 +223,14 @@ class _SpTowingHomeState
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          money? Text("GHS", style: TextStyle(),):Container(),
           Text(
-            '$count',
+            '$amount',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w500,
-              fontSize: ResponsiveExtension(28).fSize,
+            style:  TextStyleHelper.instance.title20RegularRoboto.copyWith(
               color: appTheme.light_blue_900,
-            ),
+              fontWeight: FontWeight.bold,
+           ),
           ),
           SizedBox(height: ResponsiveExtension(8).h),
           Container(
@@ -213,15 +242,331 @@ class _SpTowingHomeState
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontWeight: FontWeight.w400,
-              fontSize: ResponsiveExtension(12).fSize,
-              color: appTheme.gray_900,
+            style: TextStyleHelper.instance.body12RegularPoppins.copyWith(
+              fontSize: 12
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPreviewPopupButton() {
+    return CustomButton(
+      text: 'Preview Request',
+      backgroundColor: appTheme.white_A700,
+      textColor: appTheme.light_blue_900,
+      borderColor: appTheme.light_blue_900,
+      onPressed: () {
+        final orders = _placeholderRecentOrders();
+        final demo = orders.first;
+        _showTowingRequestPopup(demo);
+      },
+    );
+  }
+
+  Future<void> _showTowingRequestPopup(ServiceRequest request) async {
+    await showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) {
+        return Dialog(
+          insetPadding: EdgeInsets.symmetric(
+            horizontal: ResponsiveExtension(16).h,
+            vertical: ResponsiveExtension(24).h,
+          ),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(ResponsiveExtension(24).h),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(24).h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'You have an order!',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                        fontSize: ResponsiveExtension(16).fSize,
+                        color: appTheme.light_blue_900,
+                      ),
+                    ),
+                    SizedBox(height: ResponsiveExtension(4).h),
+                    Text(
+                      'Someone wants to get their vehicle towed!',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
+                        fontSize: ResponsiveExtension(12).fSize,
+                        color: appTheme.blue_gray_400,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveExtension(24).h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        CustomImageView(
+                          imagePath: ImageConstant.imgAvatar,
+                          height: ResponsiveExtension(40).h,
+                          width: ResponsiveExtension(40).h,
+                          fit: BoxFit.cover,
+                          radius: BorderRadius.circular(ResponsiveExtension(20).h),
+                        ),
+                        SizedBox(width: ResponsiveExtension(12).h),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              request.assignedProvider?.name ?? 'John Williams',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w400,
+                                fontSize: ResponsiveExtension(14).fSize,
+                                color: appTheme.light_blue_900,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Text(
+                                  'SUV',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: ResponsiveExtension(10).fSize,
+                                    color: appTheme.light_blue_900,
+                                  ),
+                                ),
+                                SizedBox(width: ResponsiveExtension(4).h),
+                                Text(
+                                  '-Toyota Land Cruiser',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: ResponsiveExtension(10).fSize,
+                                    color: appTheme.blue_gray_400,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: appTheme.light_blue_900,
+                        borderRadius: BorderRadius.circular(ResponsiveExtension(8).h),
+                      ),
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.all(ResponsiveExtension(11).h),
+                            child: Icon(Icons.phone, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
+                          ),
+                          Container(
+                            height: ResponsiveExtension(24).h,
+                            width: 1,
+                            color: appTheme.white_A700.withOpacity(0.4),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(ResponsiveExtension(11).h),
+                            child: Icon(Icons.chat_bubble_outline, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveExtension(20).h),
+                Container(
+                  height: 1,
+                  width: double.infinity,
+                  color: appTheme.light_blue_50,
+                ),
+                SizedBox(height: ResponsiveExtension(20).h),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Column(
+                      children: [
+                        Text(
+                          'From:',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: ResponsiveExtension(12).fSize,
+                            color: const Color(0xFF505050),
+                          ),
+                        ),
+                        SizedBox(height: ResponsiveExtension(8).h),
+                        SizedBox(
+                          height: ResponsiveExtension(38).h,
+                          width: ResponsiveExtension(13).h,
+                          child: CustomImageView(
+                            imagePath: ImageConstant.imgFormkitArrowright,
+                            height: ResponsiveExtension(38).h,
+                            width: ResponsiveExtension(13).h,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                        SizedBox(height: ResponsiveExtension(8).h),
+                        Text(
+                          'To:',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w700,
+                            fontSize: ResponsiveExtension(12).fSize,
+                            color: const Color(0xFF505050),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(width: ResponsiveExtension(12).h),
+                    Expanded(
+                      child: Column(
+                        children: [
+                          Container(
+                            height: ResponsiveExtension(48).h,
+                            padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(10).h),
+                            decoration: BoxDecoration(
+                              color: appTheme.light_blue_50,
+                              borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                            ),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                request.pickupLocation.address,
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: ResponsiveExtension(12).fSize,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF505050),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: ResponsiveExtension(12).h),
+                          Container(
+                            height: ResponsiveExtension(48).h,
+                            padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(10).h),
+                            decoration: BoxDecoration(
+                              color: appTheme.light_blue_50,
+                              borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                            ),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                request.destinationLocation?.address ?? 'Mr. Krabbs Mechanic Shop, Danfa',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: ResponsiveExtension(12).fSize,
+                                  fontWeight: FontWeight.w400,
+                                  color: const Color(0xFF505050),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveExtension(20).h),
+                Container(
+                  height: 1,
+                  width: double.infinity,
+                  color: appTheme.light_blue_50,
+                ),
+                SizedBox(height: ResponsiveExtension(20).h),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'You will be paid',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            fontSize: ResponsiveExtension(10).fSize,
+                            color: appTheme.gray_900,
+                          ),
+                        ),
+                        Text(
+                          'GHS ${request.estimatedCost?.toStringAsFixed(2) ?? '276.00'}',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            fontSize: ResponsiveExtension(16).fSize,
+                            color: const Color(0xFF009F22),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Container(
+                      height: ResponsiveExtension(40).h,
+                      padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(10).h),
+                      decoration: BoxDecoration(
+                        color: const Color(0x1AE30C00),
+                        border: Border.all(color: const Color(0x33E30C00)),
+                        borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Emergency',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w400,
+                            fontSize: ResponsiveExtension(12).fSize,
+                            color: const Color(0xFFE30C00),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: ResponsiveExtension(24).h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CustomButton(
+                        text: 'Decline',
+                        backgroundColor: appTheme.white_A700,
+                        textColor: appTheme.gray_900,
+                        borderColor: const Color(0xFF909090),
+                        onPressed: () { Navigator.of(ctx).pop(); },
+                        isFullWidth: true,
+                      ),
+                    ),
+                    SizedBox(width: ResponsiveExtension(10).h),
+                    Expanded(
+                      child: CustomButton(
+                        text: 'View More',
+                        backgroundColor: appTheme.light_blue_900,
+                        textColor: appTheme.white_A700,
+                        borderColor: appTheme.light_blue_900,
+                        onPressed: () { Navigator.of(ctx).pop(); },
+                        isFullWidth: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
