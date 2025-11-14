@@ -39,7 +39,6 @@ Future<void> showSPSuccessToast(
 
 class _SPSuccessToastDialog extends StatefulWidget {
   const _SPSuccessToastDialog({
-    super.key,
     required this.title,
     required this.subtitle,
     required this.caption,

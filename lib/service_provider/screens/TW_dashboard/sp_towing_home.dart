@@ -15,6 +15,7 @@ import '../../../shared/models/service_request.dart';
 import '../../../shared/models/service_provider.dart';
 import '../../../customer/core/utils/size_utils.dart' as cus_size;
 import '../../widgets/provider_status_toggle.dart';
+import '../../core/utils/nav_helper.dart';
 //
 
 
@@ -36,7 +37,7 @@ class SpTowingHome extends StatefulWidget {
 
 class _SpTowingHomeState
     extends State<SpTowingHome> {
-  int _currentNavIndex = 0;
+  final int _currentNavIndex = 0;
 
   late ServiceType _selectedService;
   bool _isOnline = true;
@@ -102,11 +103,9 @@ class _SpTowingHomeState
             label: 'Account',
           ),
         ],
-        currentIndex: _currentNavIndex,
+        currentIndex: 0,
         onItemSelected: (index) {
-          setState(() {
-            _currentNavIndex = index;
-          });
+          ProviderNav.goToIndex(context, index, isWaterHome: false);
         },
       ),
     );
@@ -556,8 +555,8 @@ class _SpTowingHomeState
                         backgroundColor: appTheme.light_blue_900,
                         textColor: appTheme.white_A700,
                         borderColor: appTheme.light_blue_900,
-                        onPressed: () { Navigator.of(ctx).pop(); context.push('/provider/request-details', extra: request); },
-                        isFullWidth: true,
+                        onPressed: () { Navigator.of(ctx).pop(); context.pushNamed(AppRouteNames.providerOrderRequestDetails, extra: request); },
+                         isFullWidth: true,
                       ),
                     ),
                   ],

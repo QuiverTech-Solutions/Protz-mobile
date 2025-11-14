@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/new_auth_service.dart';
-import '../widgets/auth_text_field.dart';
 import '../../shared/utils/pages.dart';
 import '../../shared/models/user.dart';
 import '../../shared/exceptions/auth_exceptions.dart';

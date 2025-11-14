@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../core/app_export.dart';
+import '../widgets/sp_bottom_nav_bar.dart';
+import '../core/utils/nav_helper.dart';
+import '../widgets/provider_status_toggle.dart';
+import '../../shared/utils/pages.dart';
 import '../../shared/widgets/custom_image_view.dart';
 import '../../shared/widgets/segmented_toggle.dart';
-import '../../shared/widgets/custom_button.dart';
 
 class SPOrderRequests extends StatefulWidget {
   const SPOrderRequests({super.key});
@@ -13,6 +17,7 @@ class SPOrderRequests extends StatefulWidget {
 
 class _SPOrderRequestsState extends State<SPOrderRequests> {
   bool _showOngoing = true;
+  bool _isOnline = true;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +28,7 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
           body: SafeArea(
             child: Column(
               children: [
+                _buildHeader(),
                 SizedBox(height: 12.h),
                 _buildToggle(),
                 Expanded(
@@ -40,8 +46,111 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
               ],
             ),
           ),
+          bottomNavigationBar: SPBottomNavBar(
+            items: const [
+              SPBottomNavItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              SPBottomNavItem(
+                icon: Icon(Icons.assignment_outlined),
+                activeIcon: Icon(Icons.assignment),
+                label: 'Requests',
+              ),
+              SPBottomNavItem(
+                icon: Icon(Icons.chat_bubble_outline),
+                activeIcon: Icon(Icons.chat_bubble),
+                label: 'Chats',
+              ),
+              SPBottomNavItem(
+                icon: Icon(Icons.account_balance_wallet_outlined),
+                activeIcon: Icon(Icons.account_balance_wallet),
+                label: 'Finances',
+              ),
+              SPBottomNavItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Account',
+              ),
+            ],
+            currentIndex: 1,
+            onItemSelected: (index) {
+              ProviderNav.goToIndex(context, index, isWaterHome: false);
+            },
+          ),
         );
       },
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(16.h, 12.h, 16.h, 8.h),
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () => Navigator.of(context).maybePop(),
+            child: Container(
+              width: 40.h,
+              height: 40.h,
+              decoration: BoxDecoration(
+                color: appTheme.white_A700,
+                borderRadius: BorderRadius.circular(8.h),
+              ),
+              alignment: Alignment.center,
+              child: Icon(Icons.chevron_left, color: appTheme.gray_900),
+            ),
+          ),
+          SizedBox(width: 8.h),
+          Expanded(
+            child: Text(
+              'Your Order Requests',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: appTheme.light_blue_900,
+              ),
+            ),
+          ),
+          SizedBox(width: 8.h),
+          SizedBox(
+            width: 40.h,
+            height: 40.h,
+            child: Material(
+              color: appTheme.white_A700,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.h),
+                side: BorderSide(color: appTheme.light_blue_900.withOpacity(0.1), width: 1.0),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8.h),
+                onTap: () { context.push(AppRoutes.notifications); },
+                child: Center(
+                  child: Icon(Icons.notifications, color: appTheme.light_blue_900),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 12.h),
+          ProviderStatusToggle(
+            isOnline: _isOnline,
+            onChanged: (value) {
+              setState(() {
+                _isOnline = value;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(value ? 'Status: Online' : 'Status: Offline'),
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -58,7 +167,11 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
   }
 
   Widget _buildTowingCard() {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        context.go(AppRoutes.activeJob);
+      },
+      child: Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: appTheme.white_A700,
@@ -302,11 +415,16 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
           ],
         ),
       ),
+    ),
     );
   }
 
   Widget _buildWaterCard() {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        context.go(AppRoutes.activeJob);
+      },
+      child: Container(
       width: double.infinity,
       decoration: BoxDecoration(
         color: appTheme.white_A700,
@@ -550,6 +668,7 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
           ],
         ),
       ),
+    ),
     );
   }
 }

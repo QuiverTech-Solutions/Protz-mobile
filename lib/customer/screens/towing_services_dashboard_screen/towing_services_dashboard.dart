@@ -11,7 +11,7 @@ import '../../../shared/providers/dashboard_provider.dart';
 import '../../../shared/models/dashboard_data.dart';
 import '../../../shared/widgets/dashboard_header_section.dart';
 import '../../../shared/widgets/dashboard_recent_orders.dart';
-import '../../../shared/widgets/dashboard_wallet_card.dart';
+import '../../../shared/widgets/segmented_toggle.dart';
 
 
 enum ServiceType { towing, water }
@@ -110,67 +110,11 @@ class _TowingServicesDashboardScreenState
   }
 
   Widget _buildTabSection() {
-    return Container(
-      padding: EdgeInsets.all(4.h),
-      decoration: BoxDecoration(
-        color: appTheme.white_A700,
-        border: Border.all(color: appTheme.light_blue_50, width: 4.h),
-        borderRadius: BorderRadius.circular(24.h),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _selectedService = ServiceType.towing);
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 10.h, vertical: 12.h),
-                decoration: BoxDecoration(
-                  color: _selectedService == ServiceType.towing
-                      ? appTheme.light_blue_900
-                      : appTheme.white_A700,
-                  borderRadius: BorderRadius.circular(20.h),
-                ),
-                child: Text(
-                  'Towing Services',
-                  style: TextStyleHelper.instance.title16MediumPoppins.copyWith(
-                    color: _selectedService == ServiceType.towing
-                        ? appTheme.white_A700
-                        : appTheme.light_blue_900,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _selectedService = ServiceType.water);
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
-                decoration: BoxDecoration(
-                  color: _selectedService == ServiceType.water
-                      ? appTheme.light_blue_900
-                      : appTheme.white_A700,
-                  borderRadius: BorderRadius.circular(20.h),
-                ),
-                child: Text(
-                  'Water Delivery',
-                  style: TextStyleHelper.instance.title16MediumPoppins.copyWith(
-                    color: _selectedService == ServiceType.water
-                        ? appTheme.white_A700
-                        : appTheme.light_blue_900,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    return SegmentedToggle(
+      labels: const ['Towing Services', 'Water Delivery'],
+      selectedIndex: _selectedService == ServiceType.towing ? 0 : 1,
+      onChanged: (i) => setState(() => _selectedService = i == 0 ? ServiceType.towing : ServiceType.water),
+      height: 40.h,
     );
   }
 

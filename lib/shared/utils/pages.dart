@@ -44,13 +44,11 @@ export '../../service_provider/screens/wallet_setup_screen.dart';
 // export '../../admin/screens/analytics_screen.dart';
 
 // Shared Screens
-// TODO: Add shared screens when created
-// export '../../shared/screens/settings_screen.dart';
-// export '../../shared/screens/help_screen.dart';
-// export '../../shared/screens/about_screen.dart';
-// export '../../shared/screens/terms_screen.dart';
-// export '../../shared/screens/privacy_screen.dart';
-// export '../../shared/screens/contact_screen.dart';
+export '../screens/help_support_screen.dart';
+export '../screens/customer_service_chat_screen.dart' hide ChatMessage;
+export '../screens/chat_inbox_screen.dart';
+export '../screens/chat_thread_screen.dart' hide ChatMessage, MessageStatus;
+export '../screens/order_history_screen.dart';
 
 // Service Specific Screens
 // TODO: Add service specific screens when created
@@ -139,6 +137,8 @@ class AppRoutes {
   static const String waterDeliveryScreen2 = '/water-delivery-screen2';
 
   static const String waterDeliveryScreen1 = '/water-delivery-screen1';
+  static const String waterDeliveryDashboard = '/water-delivery';
+  static const String providerOrderRequestDetails = '/provider/request-details';
 }
 
 // GoRouter Route Names (for named navigation)
@@ -221,6 +221,8 @@ class AppRouteNames {
   static const String waterDeliveryScreen2 = 'water-delivery-screen2';
 
   static const String waterDeliveryScreen1 = 'water-delivery-screen1';
+  static const String waterDeliveryDashboard = 'water-delivery';
+  static const String providerOrderRequestDetails = 'provider-order-request-details';
 }
 
 // GoRouter Navigation Helper Class
