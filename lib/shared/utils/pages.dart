@@ -100,6 +100,7 @@ class AppRoutes {
   static const String documents = '/provider/documents';
   static const String availability = '/provider/availability';
   static const String providerWalletSetup = '/provider/wallet/setup';
+  static const String providerWaterHome = '/provider/water-home';
   
   // Admin Routes
   static const String adminDashboard = '/admin';
@@ -181,6 +182,7 @@ class AppRouteNames {
   static const String documents = 'documents';
   static const String availability = 'availability';
   static const String providerWalletSetup = 'provider-wallet-setup';
+  static const String providerWaterHome = 'provider-water-home';
   
   // Admin Route Names
   static const String adminDashboard = 'admin-dashboard';
