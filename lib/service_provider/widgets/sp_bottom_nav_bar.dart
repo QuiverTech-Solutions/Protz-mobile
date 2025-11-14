@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/app_export.dart';
 
 class SPBottomNavItem {
   final Widget icon;
@@ -40,11 +41,12 @@ class SPBottomNavBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
+        height: 88.h,
         decoration: BoxDecoration(
           color: backgroundColor,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24.h),
+            topRight: Radius.circular(24.h),
           ),
           boxShadow: [
             BoxShadow(
@@ -54,7 +56,7 @@ class SPBottomNavBar extends StatelessWidget {
             ),
           ],
         ),
-        padding: const EdgeInsets.fromLTRB(24, 12, 16, 28),
+        padding: EdgeInsets.fromLTRB(24, 12.h, 16, 28.h),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -83,7 +85,7 @@ class SPBottomNavBar extends StatelessWidget {
 
     final Widget content = Container(
       width: 68,
-      height: 60,
+      height: 60.h,
       decoration: isActive ? activeDecoration : defaultDecoration,
       alignment: Alignment.center,
       child: Column(
@@ -92,15 +94,15 @@ class SPBottomNavBar extends StatelessWidget {
           IconTheme(
             data: IconThemeData(
               color: iconColor,
-              size: 24,
+              size: 24.h,
             ),
             child: SizedBox(
               width: 24,
-              height: 24,
+              height: 24.h,
               child: Center(child: iconWidget),
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2.h),
           Text(
             item.label,
             textAlign: TextAlign.center,
@@ -120,7 +122,7 @@ class SPBottomNavBar extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: () => onItemSelected(index),
-        child: isActive ? content : Opacity(opacity: 0.5, child: content),
+        child: content,
       ),
     );
   }
