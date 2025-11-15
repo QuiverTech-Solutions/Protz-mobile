@@ -1,19 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:protz/shared/utils/pages.dart';
+import '../../customer/core/utils/size_utils.dart';
 import '../../customer/widgets/call_options_popup.dart';
 import '../../customer/widgets/attachment_options_popup.dart';
 import '../../customer/widgets/user_options_bottom_sheet.dart';
+import '../../service_provider/widgets/provider_status_toggle.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
+import '../../service_provider/widgets/sp_bottom_nav_bar.dart';
+import '../../service_provider/core/utils/nav_helper.dart';
 
 class ChatThreadScreen extends StatefulWidget {
   final String contactName;
   final String contactSubtitle;
   final String contactAvatar;
+  final bool isProvider;
 
   const ChatThreadScreen({
     super.key,
     required this.contactName,
     required this.contactSubtitle,
     required this.contactAvatar,
+    this.isProvider = false,
   });
 
   @override
@@ -87,19 +95,75 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: _buildMessagesList(),
+    return Sizer(
+      builder: (context, orientation, deviceType) {
+        return Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Column(
+              children: [
+                _buildHeader(),
+                Expanded(
+                  child: _buildMessagesList(),
+                ),
+                _buildMessageInput(),
+              ],
             ),
-            _buildMessageInput(),
-          ],
-        ),
-      ),
+          ),
+          bottomNavigationBar: widget.isProvider
+              ? SPBottomNavBar(
+                  currentIndex: 2,
+                  items: const [
+                    SPBottomNavItem(
+                      icon: Icon(Icons.home_outlined),
+                      activeIcon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.assignment_outlined),
+                      activeIcon: Icon(Icons.assignment),
+                      label: 'Requests',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.chat_bubble_outline),
+                      activeIcon: Icon(Icons.chat_bubble),
+                      label: 'Chats',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.account_balance_wallet_outlined),
+                      activeIcon: Icon(Icons.account_balance_wallet),
+                      label: 'Finances',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.person_outline),
+                      activeIcon: Icon(Icons.person),
+                      label: 'Account',
+                    ),
+                  ],
+                  onItemSelected: (index) {
+                    ProviderNav.goToIndex(context, index);
+                  },
+                )
+              : CustomBottomNavBar(
+                  currentIndex: 2,
+                  onTap: (index) {
+                    switch (index) {
+                      case 0:
+                        context.go(AppRouteNames.customerHome);
+                        break;
+                      case 1:
+                        context.push(AppRoutes.history);
+                        break;
+                      case 2:
+                        break;
+                      case 3:
+                        context.push(AppRoutes.accountSettings);
+                        break;
+                    }
+                  },
+                ),
+        );
+      },
     );
   }
 
@@ -170,33 +234,55 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () {
-              _showCallOptions();
-            },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              child: const Icon(
-                Icons.phone,
-                color: Color(0xFF0891B2),
-                size: 24,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: () {
-              _showUserOptions();
-            },
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              child: const Icon(
-                Icons.more_vert,
+          if (widget.isProvider) ...[
+            IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.notifications_outlined,
                 color: Color(0xFF333333),
-                size: 24,
+                size: 22,
               ),
             ),
-          ),
+            ProviderStatusToggle(
+              isOnline: true,
+              onChanged: (value) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(value ? 'Status: Online' : 'Status: Offline'),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+            ),
+          ] else ...[
+            GestureDetector(
+              onTap: () {
+                _showCallOptions();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: const Icon(
+                  Icons.phone,
+                  color: Color(0xFF0891B2),
+                  size: 24,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () {
+                _showUserOptions();
+              },
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: const Icon(
+                  Icons.more_vert,
+                  color: Color(0xFF333333),
+                  size: 24,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
