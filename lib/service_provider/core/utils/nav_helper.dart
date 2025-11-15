@@ -40,7 +40,7 @@ class ProviderNav {
         context.go(AppRoutes.jobRequests);
         break;
       case 2:
-        context.go(AppRoutes.chatInbox);
+        context.go('${AppRoutes.chatInbox}?ctx=provider');
         break;
       case 3:
         context.go(AppRoutes.earnings);
