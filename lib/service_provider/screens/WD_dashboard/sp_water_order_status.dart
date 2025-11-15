@@ -5,8 +5,7 @@ import '../../../shared/widgets/custom_image_view.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../core/app_export.dart';
-import '../../widgets/sp_bottom_nav_bar.dart';
-import '../../core/utils/nav_helper.dart';
+
 import '../../widgets/order_progress_bar.dart';
 import '../../widgets/requester_info_card.dart';
 
@@ -18,8 +17,8 @@ class SPWaterOrderStatus extends StatefulWidget {
 }
 
 class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
-  double _progress = 0.3;
-  String _statusText = 'Driving to destination';
+  final double _progress = 0.3;
+  final String _statusText = 'Driving to destination';
 
   @override
   Widget build(BuildContext context) {
@@ -122,54 +121,6 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        InkWell(
-          onTap: () => Navigator.of(context).maybePop(),
-          child: Container(
-            width: ResponsiveExtension(40).h,
-            height: ResponsiveExtension(40).h,
-            decoration: BoxDecoration(
-              color: appTheme.white_A700,
-              borderRadius: BorderRadius.circular(ResponsiveExtension(8).h),
-            ),
-            alignment: Alignment.center,
-            child: Icon(Icons.chevron_left, color: appTheme.gray_900),
-          ),
-        ),
-        SizedBox(width: ResponsiveExtension(8).h),
-        Expanded(
-          child: Text(
-            'Order Status',
-            textAlign: TextAlign.center,
-            style: TextStyleHelper.instance.title18MediumPoppins,
-          ),
-        ),
-        SizedBox(
-          width: ResponsiveExtension(88).h,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {},
-              style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFFE30C00),
-              ),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: ResponsiveExtension(12).fSize,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildBanner() {
     return ClipRRect(
