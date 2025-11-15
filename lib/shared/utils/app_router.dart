@@ -7,6 +7,7 @@ import 'package:protz/service_provider/screens/WD_dashboard/sp_water_home.dart';
 import 'package:protz/service_provider/screens/WD_dashboard/sp_water_order_status.dart';
 import 'package:protz/service_provider/screens/sp_order_requests.dart';
 import 'package:protz/service_provider/screens/TW_dashboard/sp_towing_order_status.dart';
+import 'package:protz/service_provider/screens/sp_finances_screen.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_dashboard_screen.dart';
 import '../../customer/screens/acount_screens/account_screen.dart';
 import '../../customer/screens/acount_screens/delete_account_screen.dart';
@@ -319,11 +320,7 @@ class AppRouter {
             path: 'earnings',
             name: AppRouteNames.earnings,
             pageBuilder: (context, state) => CustomTransitions.slideTransition(
-              child: const Scaffold(
-                body: Center(
-                  child: Text('Earnings - Coming Soon'),
-                ),
-              ),
+              child: const SPFinancesScreen(),
               state: state,
             ),
           ),
