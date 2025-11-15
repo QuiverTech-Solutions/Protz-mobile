@@ -7,30 +7,42 @@ class RequesterInfoCard extends StatelessWidget {
   const RequesterInfoCard({
     super.key,
     required this.name,
-    required this.vehicleType,
-    required this.vehicleModel,
     required this.priceText,
-    required this.badgeText,
     required this.avatarImagePath,
+    this.vehicleType,
+    this.vehicleModel,
+    this.infoPrefix,
+    this.infoHighlight,
+    this.quantityText,
+    this.badgeText,
     this.onCallPressed,
     this.onChatPressed,
     this.badgeBackgroundColor,
     this.badgeBorderColor,
     this.badgeTextColor,
+    this.quantityBackgroundColor,
+    this.quantityBorderColor,
+    this.quantityTextColor,
     this.priceColor,
   });
 
   final String name;
-  final String vehicleType;
-  final String vehicleModel;
+  final String? vehicleType;
+  final String? vehicleModel;
   final String priceText;
-  final String badgeText;
+  final String? badgeText;
   final String avatarImagePath;
+  final String? infoPrefix;
+  final String? infoHighlight;
+  final String? quantityText;
   final VoidCallback? onCallPressed;
   final VoidCallback? onChatPressed;
   final Color? badgeBackgroundColor;
   final Color? badgeBorderColor;
   final Color? badgeTextColor;
+  final Color? quantityBackgroundColor;
+  final Color? quantityBorderColor;
+  final Color? quantityTextColor;
   final Color? priceColor;
 
   @override
@@ -72,29 +84,60 @@ class RequesterInfoCard extends StatelessWidget {
                           color: appTheme.light_blue_900,
                         ),
                       ),
-                      Row(
-                        children: [
-                          Text(
-                            vehicleType,
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w700,
-                              fontSize: ResponsiveExtension(10).fSize,
-                              color: appTheme.light_blue_900,
-                            ),
-                          ),
-                          SizedBox(width: ResponsiveExtension(4).h),
-                          Text(
-                            '-$vehicleModel',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w400,
-                              fontSize: ResponsiveExtension(10).fSize,
-                              color: const Color(0xFF909090),
-                            ),
-                          ),
-                        ],
-                      ),
+                      if (infoPrefix != null || infoHighlight != null)
+                        Row(
+                          children: [
+                            if (infoPrefix != null)
+                              Text(
+                                infoPrefix!,
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: ResponsiveExtension(10).fSize,
+                                  color: const Color(0xFF909090),
+                                ),
+                              ),
+                            if (infoHighlight != null) ...[
+                              SizedBox(width: ResponsiveExtension(4).h),
+                              Text(
+                                infoHighlight!,
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: ResponsiveExtension(10).fSize,
+                                  color: appTheme.light_blue_900,
+                                ),
+                              ),
+                            ],
+                          ],
+                        )
+                      else if (vehicleType != null || vehicleModel != null)
+                        Row(
+                          children: [
+                            if (vehicleType != null)
+                              Text(
+                                vehicleType!,
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: ResponsiveExtension(10).fSize,
+                                  color: appTheme.light_blue_900,
+                                ),
+                              ),
+                            if (vehicleModel != null) ...[
+                              SizedBox(width: ResponsiveExtension(4).h),
+                              Text(
+                                '-$vehicleModel',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: ResponsiveExtension(10).fSize,
+                                  color: const Color(0xFF909090),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                     ],
                   ),
                 ],
@@ -106,8 +149,8 @@ class RequesterInfoCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    Padding(
-                      padding: EdgeInsets.all(ResponsiveExtension(11).h),
+                    SizedBox(
+                      //padding: EdgeInsets.all(ResponsiveExtension(11).h),
                       child: IconButton(
                         onPressed: onCallPressed,
                         icon: Icon(Icons.phone, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
@@ -118,8 +161,8 @@ class RequesterInfoCard extends StatelessWidget {
                       width: 1,
                       color: appTheme.white_A700.withOpacity(0.4),
                     ),
-                    Padding(
-                      padding: EdgeInsets.all(ResponsiveExtension(11).h),
+                    SizedBox(
+                      //padding: EdgeInsets.all(ResponsiveExtension(11).h),
                       child: IconButton(
                         onPressed: onChatPressed,
                         icon: Icon(Icons.chat_bubble_outline, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
@@ -143,26 +186,48 @@ class RequesterInfoCard extends StatelessWidget {
                   color: priceColor ?? const Color(0xFF009F22),
                 ),
               ),
-              Container(
-                height: ResponsiveExtension(28).h,
-                padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(24).h),
-                decoration: BoxDecoration(
-                  color: badgeBackgroundColor ?? const Color(0x1AE30C00),
-                  border: Border.all(color: badgeBorderColor ?? const Color(0x33E30C00)),
-                  borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
-                ),
-                child: Center(
-                  child: Text(
-                    badgeText,
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w400,
-                      fontSize: ResponsiveExtension(10).fSize,
-                      color: badgeTextColor ?? const Color(0xFFE30C00),
+              if (quantityText != null)
+                Container(
+                  height: ResponsiveExtension(28).h,
+                  padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(24).h),
+                  decoration: BoxDecoration(
+                    color: quantityBackgroundColor ?? const Color(0x1A000000),
+                    border: Border.all(color: quantityBorderColor ?? const Color(0x33000000)),
+                    borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                  ),
+                  child: Center(
+                    child: Text(
+                      quantityText!,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
+                        fontSize: ResponsiveExtension(10).fSize,
+                        color: quantityTextColor ?? const Color(0xFF1E1E1E),
+                      ),
+                    ),
+                  ),
+                )
+              else if (badgeText != null)
+                Container(
+                  height: ResponsiveExtension(28).h,
+                  padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(24).h),
+                  decoration: BoxDecoration(
+                    color: badgeBackgroundColor ?? const Color(0x1AE30C00),
+                    border: Border.all(color: badgeBorderColor ?? const Color(0x33E30C00)),
+                    borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                  ),
+                  child: Center(
+                    child: Text(
+                      badgeText!,
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w400,
+                        fontSize: ResponsiveExtension(10).fSize,
+                        color: badgeTextColor ?? const Color(0xFFE30C00),
+                      ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ],

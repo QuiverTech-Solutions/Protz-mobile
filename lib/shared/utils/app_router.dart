@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protz/customer/screens/towing_services_dashboard_screen/towing_services_dashboard.dart';
-import 'package:protz/shared/screens/chat_thread_screen.dart';
+import 'package:protz/service_provider/screens/TW_dashboard/sp_towing_home.dart';
+import 'package:protz/service_provider/screens/TW_dashboard/sp_order_request_details.dart';
+import 'package:protz/service_provider/screens/WD_dashboard/sp_water_home.dart';
+import 'package:protz/service_provider/screens/WD_dashboard/sp_water_order_status.dart';
+import 'package:protz/service_provider/screens/sp_order_requests.dart';
+import 'package:protz/service_provider/screens/TW_dashboard/sp_towing_order_status.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_dashboard_screen.dart';
 import '../../customer/screens/acount_screens/account_screen.dart';
 import '../../customer/screens/acount_screens/delete_account_screen.dart';
-import '../screens/order_history_screen.dart';
-import '../screens/help_support_screen.dart';
-import '../screens/customer_service_chat_screen.dart';
-import '../screens/chat_inbox_screen.dart';
+import '../models/service_request.dart';
 import '../../auth/screens/new_password_screen.dart';
 
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_screen_1.dart';
@@ -17,7 +19,7 @@ import 'pages.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
-    initialLocation:'/',
+    initialLocation:AppRoutes.providerHome,
     debugLogDiagnostics: true,
     routes: [
       // Splash/Initial Route
@@ -120,11 +122,11 @@ class AppRouter {
           state: state,
         ),
       ),
-  GoRoute(
-        path:'/water_delivery_screen',
-        name: 'water_delivery_screen',
+      GoRoute(
+        path: AppRoutes.waterDeliveryDashboard,
+        name: AppRouteNames.waterDeliveryDashboard,
         pageBuilder: (context, state) => CustomTransitions.fadeTransition(
-          child: WaterDeliveryDashboard(),
+          child: const WaterDeliveryDashboard(),
           state: state,
         ),
       ),
@@ -283,22 +285,16 @@ class AppRouter {
         path: AppRoutes.providerHome,
         name: AppRouteNames.providerHome,
         pageBuilder: (context, state) => CustomTransitions.fadeTransition(
-          child: const Scaffold(
-            body: Center(
-              child: Text('Provider Home - Coming Soon'),
-            ),
-          ),
+          child: const SpTowingHome(),
           state: state,
         ),
         routes: [
           GoRoute(
-            path: 'job-requests',
-            name: AppRouteNames.jobRequests,
+            path: 'request-details',
+            name: AppRouteNames.providerOrderRequestDetails,
             pageBuilder: (context, state) => CustomTransitions.slideTransition(
-              child: const Scaffold(
-                body: Center(
-                  child: Text('Job Requests - Coming Soon'),
-                ),
+              child: SPOrderRequestDetails(
+                request: state.extra as ServiceRequest,
               ),
               state: state,
             ),
@@ -307,11 +303,15 @@ class AppRouter {
             path: 'active-job',
             name: AppRouteNames.activeJob,
             pageBuilder: (context, state) => CustomTransitions.slideTransition(
-              child: const Scaffold(
-                body: Center(
-                  child: Text('Active Job - Coming Soon'),
-                ),
-              ),
+              child: const SPTowingOrderStatus(),
+              state: state,
+            ),
+          ),
+          GoRoute(
+            path: 'active-water-job',
+            name: AppRouteNames.activeWaterJob,
+            pageBuilder: (context, state) => CustomTransitions.slideTransition(
+              child: const SPWaterOrderStatus(),
               state: state,
             ),
           ),
@@ -368,6 +368,24 @@ class AppRouter {
             ),
           ),
         ],
+      ),
+
+      GoRoute(
+        path: AppRoutes.jobRequests,
+        name: AppRouteNames.jobRequests,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: const SPOrderRequests(),
+          state: state,
+        ),
+      ),
+
+      GoRoute(
+        path: AppRoutes.providerWaterHome,
+        name: AppRouteNames.providerWaterHome,
+        pageBuilder: (context, state) => CustomTransitions.fadeTransition(
+          child: const SpWaterHome(),
+          state: state,
+        ),
       ),
       
       // Admin Routes
