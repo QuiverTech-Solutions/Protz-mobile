@@ -7,6 +7,7 @@ import '../widgets/provider_status_toggle.dart';
 import '../../shared/utils/pages.dart';
 import '../../shared/widgets/custom_image_view.dart';
 import '../../shared/widgets/segmented_toggle.dart';
+import '../widgets/order_progress_bar.dart';
 
 class SPOrderRequests extends StatefulWidget {
   const SPOrderRequests({super.key});
@@ -323,42 +324,11 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
               ),
             ),
             SizedBox(height: 8.h),
-            SizedBox(
-              height: 20.h,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 4.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE6E0E9),
-                        borderRadius: BorderRadius.circular(4.h),
-                      ),
-                      alignment: Alignment.centerLeft,
-                      child: FractionallySizedBox(
-                        widthFactor: 0.3,
-                        child: Container(
-                          height: 4.h,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFef7ff),
-                            borderRadius: BorderRadius.circular(100.h),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.h),
-                  Container(
-                    width: 20.h,
-                    height: 20.h,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFef7ff),
-                      borderRadius: BorderRadius.circular(10.h),
-                      border: Border.all(color: const Color(0xFFE6E0E9)),
-                    ),
-                  ),
-                ],
-              ),
+            OrderProgressBar(
+              progress: 0.3,
+              trackColor: const Color(0xFFE6E0E9),
+              fillColor: const Color(0xFFFef7ff),
+              knobColor: const Color(0xFFFef7ff),
             ),
             SizedBox(height: 8.h),
             Row(
@@ -422,7 +392,7 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
   Widget _buildWaterCard() {
     return GestureDetector(
       onTap: () {
-        context.go(AppRoutes.activeJob);
+        context.goNamed(AppRouteNames.activeWaterJob);
       },
       child: Container(
       width: double.infinity,
@@ -576,42 +546,11 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
               ),
             ),
             SizedBox(height: 8.h),
-            SizedBox(
-              height: 20.h,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 4.h,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE6E0E9),
-                        borderRadius: BorderRadius.circular(4.h),
-                      ),
-                      alignment: Alignment.centerLeft,
-                      child: FractionallySizedBox(
-                        widthFactor: 0.6,
-                        child: Container(
-                          height: 4.h,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFef7ff),
-                            borderRadius: BorderRadius.circular(100.h),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 10.h),
-                  Container(
-                    width: 20.h,
-                    height: 20.h,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFef7ff),
-                      borderRadius: BorderRadius.circular(10.h),
-                      border: Border.all(color: const Color(0xFFE6E0E9)),
-                    ),
-                  ),
-                ],
-              ),
+            OrderProgressBar(
+              progress: 0.6,
+              trackColor: const Color(0xFFE6E0E9),
+              fillColor: const Color(0xFFFef7ff),
+              knobColor: const Color(0xFFFef7ff),
             ),
             SizedBox(height: 8.h),
             Row(

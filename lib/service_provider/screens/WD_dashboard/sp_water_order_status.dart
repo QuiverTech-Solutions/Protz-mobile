@@ -8,6 +8,7 @@ import '../../core/app_export.dart';
 import '../../widgets/sp_bottom_nav_bar.dart';
 import '../../core/utils/nav_helper.dart';
 import '../../widgets/order_progress_bar.dart';
+import '../../widgets/requester_info_card.dart';
 
 class SPWaterOrderStatus extends StatefulWidget {
   const SPWaterOrderStatus({super.key});
@@ -18,7 +19,7 @@ class SPWaterOrderStatus extends StatefulWidget {
 
 class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
   double _progress = 0.3;
-  String _statusText = 'Driving to the vehicle pickup point';
+  String _statusText = 'Driving to destination';
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +29,7 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
         slivers: [
           CustomSliverAppBar(
             title: 'Order Request',
-            onBackPressed: () => Navigator.of(context).maybePop(),
+            onBackPressed: () => Navigator.of(context).pop(),
             pinned: true,
             backgroundColor: Colors.transparent,
           ),
@@ -89,9 +90,30 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
                 SizedBox(height: ResponsiveExtension(12).h),
                 _buildProgressSection(),
                 SizedBox(height: ResponsiveExtension(16).h),
-                _buildRequesterInfo(),
+                RequesterInfoCard(
+                  name: 'John Williams',
+                  priceText: 'GHS 276',
+                  avatarImagePath: ImageConstant.imgAvatar,
+                  infoPrefix: 'To be delivered in-',
+                  infoHighlight: '2 hours',
+                  quantityText: '100 Gallons',
+                  onCallPressed: () {},
+                  onChatPressed: () {},
+                ),
                 SizedBox(height: ResponsiveExtension(16).h),
-                _buildCancelButton(),
+                SizedBox(
+                  width: double.infinity,
+                  child: CustomButton(
+                    text: 'Cancel',
+                    backgroundColor: appTheme.white_A700,
+                    textColor: const Color(0xFFE30C00),
+                    borderColor: const Color(0xFFE30C00),
+                    borderRadius: ResponsiveExtension(12).h,
+                    height: ResponsiveExtension(50).h,
+                    isFullWidth: true,
+                    onPressed: () {},
+                  ),
+                ),
               ],
             );
           },
@@ -161,179 +183,6 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
     );
   }
 
-  Widget _buildRequesterInfo() {
-    return Container(
-      decoration: BoxDecoration(
-        color: appTheme.light_blue_50,
-        borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
-      ),
-      padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(24).h, vertical: ResponsiveExtension(12).h),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  CustomImageView(
-                    imagePath: ImageConstant.imgAvatar,
-                    height: ResponsiveExtension(40).h,
-                    width: ResponsiveExtension(40).h,
-                    fit: BoxFit.cover,
-                    radius: BorderRadius.circular(ResponsiveExtension(20).h),
-                  ),
-                  SizedBox(width: ResponsiveExtension(12).h),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'John Williams',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w400,
-                          fontSize: ResponsiveExtension(14).fSize,
-                          color: appTheme.light_blue_900,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Text(
-                            'SUV',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w700,
-                              fontSize: ResponsiveExtension(10).fSize,
-                              color: appTheme.light_blue_900,
-                            ),
-                          ),
-                          SizedBox(width: ResponsiveExtension(4).h),
-                          Text(
-                            '-Toyota Land Cruiser',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w400,
-                              fontSize: ResponsiveExtension(10).fSize,
-                              color: const Color(0xFF909090),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: appTheme.light_blue_900,
-                  borderRadius: BorderRadius.circular(ResponsiveExtension(8).h),
-                ),
-                child: Row(
-                  children: [
-                    Padding(
-                      padding: EdgeInsets.all(ResponsiveExtension(11).h),
-                      child: Icon(Icons.phone, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
-                    ),
-                    Container(height: ResponsiveExtension(24).h, width: 1, color: appTheme.white_A700.withOpacity(0.4)),
-                    Padding(
-                      padding: EdgeInsets.all(ResponsiveExtension(11).h),
-                      child: Icon(Icons.chat_bubble_outline, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: ResponsiveExtension(12).h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'GHS 276',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                  fontSize: ResponsiveExtension(16).fSize,
-                  color: const Color(0xFF009F22),
-                ),
-              ),
-              Container(
-                height: ResponsiveExtension(28).h,
-                padding: EdgeInsets.symmetric(horizontal: 24),
-                decoration: BoxDecoration(
-                  color: const Color(0x1AE30C00),
-                  border: Border.all(color: const Color(0x33E30C00)),
-                  borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
-                ),
-                child: Center(
-                  child: Text(
-                    'Emergency',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontWeight: FontWeight.w400,
-                      fontSize: ResponsiveExtension(10).fSize,
-                      color: const Color(0xFFE30C00),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPaymentAndUrgency() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'You will be paid',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w400,
-                fontSize: ResponsiveExtension(10).fSize,
-                color: appTheme.gray_900,
-              ),
-            ),
-            Text(
-              'GHS 276',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                fontSize: ResponsiveExtension(16).fSize,
-                color: const Color(0xFF009F22),
-              ),
-            ),
-          ],
-        ),
-        Container(
-          height: ResponsiveExtension(28).h,
-          padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(10).h),
-          decoration: BoxDecoration(
-            color: const Color(0x1AE30C00),
-            border: Border.all(color: const Color(0x33E30C00)),
-            borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
-          ),
-          child: Center(
-            child: Text(
-              'Emergency',
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w400,
-                fontSize: ResponsiveExtension(10).fSize,
-                color: const Color(0xFFE30C00),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildProgressSection() {
     return OrderProgressBar(
@@ -347,51 +196,4 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
     );
   }
 
-  Widget _buildActionsRow() {
-    return Row(
-      spacing: ResponsiveExtension(12).h,
-      children: [
-        Expanded(
-          child: CustomButton(
-            text: 'View Route',
-            backgroundColor: appTheme.white_A700,
-            textColor: appTheme.light_blue_900,
-            borderColor: appTheme.light_blue_900,
-            borderRadius: ResponsiveExtension(12).h,
-            height: ResponsiveExtension(44).h,
-            isFullWidth: true,
-            onPressed: () {},
-          ),
-        ),
-        Expanded(
-          child: CustomButton(
-            text: 'Update ETA',
-            backgroundColor: appTheme.white_A700,
-            textColor: appTheme.light_blue_900,
-            borderColor: appTheme.light_blue_900,
-            borderRadius: ResponsiveExtension(12).h,
-            height: ResponsiveExtension(44).h,
-            isFullWidth: true,
-            onPressed: () {},
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCancelButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: CustomButton(
-        text: 'Cancel',
-        backgroundColor: appTheme.white_A700,
-        textColor: const Color(0xFFE30C00),
-        borderColor: const Color(0xFFE30C00),
-        borderRadius: ResponsiveExtension(12).h,
-        height: ResponsiveExtension(50).h,
-        isFullWidth: true,
-        onPressed: () {},
-      ),
-    );
-  }
 }

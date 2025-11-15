@@ -93,6 +93,7 @@ class AppRoutes {
   static const String providerHome = '/provider';
   static const String jobRequests = '/provider/job-requests';
   static const String activeJob = '/provider/active-job';
+  static const String activeWaterJob = '/provider/active-water-job';
   static const String earnings = '/provider/earnings';
   static const String providerProfile = '/provider/profile';
   static const String documents = '/provider/documents';
@@ -177,6 +178,7 @@ class AppRouteNames {
   static const String providerHome = 'provider-home';
   static const String jobRequests = 'job-requests';
   static const String activeJob = 'active-job';
+  static const String activeWaterJob = 'active-water-job';
   static const String earnings = 'earnings';
   static const String providerProfile = 'provider-profile';
   static const String documents = 'documents';
