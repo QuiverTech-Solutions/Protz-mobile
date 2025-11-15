@@ -5,8 +5,6 @@ import '../../../shared/widgets/custom_image_view.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../core/app_export.dart';
-import '../../widgets/sp_bottom_nav_bar.dart';
-import '../../core/utils/nav_helper.dart';
 import '../../widgets/order_progress_bar.dart';
 import '../../widgets/requester_info_card.dart';
 
@@ -18,8 +16,8 @@ class SPTowingOrderStatus extends StatefulWidget {
 }
 
 class _SPTowingOrderStatusState extends State<SPTowingOrderStatus> {
-  double _progress = 0.3;
-  String _statusText = 'Driving to the vehicle pickup point';
+  final double _progress = 0.3;
+  final String _statusText = 'Driving to the vehicle pickup point';
 
   @override
   Widget build(BuildContext context) {
