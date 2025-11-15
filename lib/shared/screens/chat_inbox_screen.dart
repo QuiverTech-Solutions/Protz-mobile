@@ -4,8 +4,13 @@ import '../utils/pages.dart';
 import '../../customer/core/app_export.dart';
 import '../../customer/core/utils/size_utils.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
+import '../../service_provider/widgets/provider_status_toggle.dart';
+import '../../service_provider/widgets/sp_bottom_nav_bar.dart';
+import '../../service_provider/core/utils/nav_helper.dart';
 class ChatInboxScreen extends StatefulWidget {
-  const ChatInboxScreen({super.key});
+  final bool isProvider;
+
+  const ChatInboxScreen({super.key, this.isProvider = false});
 
   @override
   State<ChatInboxScreen> createState() => _ChatInboxScreenState();
@@ -53,32 +58,61 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
               ],
             ),
           ),
-          bottomNavigationBar: CustomBottomNavBar(
-            currentIndex: _selectedBottomNavIndex,
-            onTap: (index) {
-              setState(() {
-                _selectedBottomNavIndex = index;
-              });
-              // Handle navigation based on index
-              switch (index) {
-                case 0:
-                  // Home - navigate to home screen
-                  context.go(AppRouteNames.customerHome);
-                  break;
-                case 1:
-                  // Orders - navigate to orders screen
-                  context.push(AppRoutes.history);
-                  break;
-                case 2:
-                  // Chats - already on chats screen
-                  break;
-                case 3:
-                  // Account - navigate to account screen
-                  context.push(AppRoutes.accountSettings);
-                  break;
-              }
-            },
-          ),
+          bottomNavigationBar: widget.isProvider
+              ? SPBottomNavBar(
+                  currentIndex: 2,
+                  items: const [
+                    SPBottomNavItem(
+                      icon: Icon(Icons.home_outlined),
+                      activeIcon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.assignment_outlined),
+                      activeIcon: Icon(Icons.assignment),
+                      label: 'Requests',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.chat_bubble_outline),
+                      activeIcon: Icon(Icons.chat_bubble),
+                      label: 'Chats',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.account_balance_wallet_outlined),
+                      activeIcon: Icon(Icons.account_balance_wallet),
+                      label: 'Finances',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.person_outline),
+                      activeIcon: Icon(Icons.person),
+                      label: 'Account',
+                    ),
+                  ],
+                  onItemSelected: (index) {
+                    ProviderNav.goToIndex(context, index);
+                  },
+                )
+              : CustomBottomNavBar(
+                  currentIndex: _selectedBottomNavIndex,
+                  onTap: (index) {
+                    setState(() {
+                      _selectedBottomNavIndex = index;
+                    });
+                    switch (index) {
+                      case 0:
+                        context.go(AppRouteNames.customerHome);
+                        break;
+                      case 1:
+                        context.push(AppRoutes.history);
+                        break;
+                      case 2:
+                        break;
+                      case 3:
+                        context.push(AppRoutes.accountSettings);
+                        break;
+                    }
+                  },
+                ),
         );
       },
     );
@@ -175,6 +209,20 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
             ),
+            if (widget.isProvider) ...[
+              const SizedBox(width: 8),
+              ProviderStatusToggle(
+                isOnline: true,
+                onChanged: (value) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(value ? 'Status: Online' : 'Status: Offline'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -374,7 +422,8 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
           queryParameters: {
             'contactAvatar': chat.avatarUrl,
             'contactName': chat.senderName,
-            'contactSubtitle': 'Bulk Water Supplier', // You can make this dynamic based on chat type
+            'contactSubtitle': 'Bulk Water Supplier',
+            'ctx': widget.isProvider ? 'provider' : 'customer',
           },
         );
       },
