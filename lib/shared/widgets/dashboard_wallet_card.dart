@@ -7,10 +7,16 @@ import 'package:protz/shared/widgets/custom_button.dart';
 
 class DashboardWalletCard extends StatelessWidget {
   final WalletInfo walletInfo;
+  final String? accountOwnerName;
+  final String? serviceLabel;
+  final VoidCallback? onWithdraw;
 
   const DashboardWalletCard({
     super.key,
     required this.walletInfo,
+    this.accountOwnerName,
+    this.serviceLabel,
+    this.onWithdraw,
   });
 
   @override
@@ -39,9 +45,18 @@ class DashboardWalletCard extends StatelessWidget {
                       'Protz Wallet Account:',
                       style: TextStyleHelper.instance.body14RegularPoppins,
                     ),
-                    Text(
-                      'GHS ${walletInfo.balance.toStringAsFixed(2)}',
-                      style: TextStyleHelper.instance.headline24MediumPoppins,
+                    Row(
+                      children: [
+                        Text(
+                          'GHS',
+                          style: TextStyleHelper.instance.headline24MediumPoppins,
+                        ),
+                        SizedBox(width: 8.h),
+                        Text(
+                          '******',
+                          style: TextStyleHelper.instance.headline24MediumPoppins,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -50,50 +65,33 @@ class DashboardWalletCard extends StatelessWidget {
                 spacing: 8.h,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
+                  Text(
+                    accountOwnerName ?? 'Account Balance',
+                    style: TextStyleHelper.instance.body14RegularPoppins,
+                  ),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.h),
+                    padding: EdgeInsets.symmetric(horizontal: 8.h, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: appTheme.light_blue_50,
                       borderRadius: BorderRadius.circular(8.h),
                     ),
                     child: Text(
-                      'Customer',
+                      serviceLabel ?? 'Customer',
                       style: TextStyleHelper.instance.label10RegularPoppins,
                     ),
-                  ),
-                  Text(
-                    'Account Balance', // Static text since accountHolderName doesn't exist
-                    style: TextStyleHelper.instance.body14RegularPoppins,
                   ),
                 ],
               ),
             ],
           ),
-          Row(
-            spacing: 12.h,
-            children: [
-              Expanded(
-                child: CustomButton(
-                  padding: EdgeInsets.symmetric(horizontal: 10),
-                  text: 'View Balance',
-                  onPressed: () {},
-                  backgroundColor: appTheme.white_A700,
-                  textColor: appTheme.light_blue_900,
-                  borderColor: appTheme.light_blue_900,
-                  isFullWidth: true,
-                ),
-              ),
-              Expanded(
-                child: CustomButton(
-                  text: 'Top up',
-                  onPressed: () {},
-                  backgroundColor: appTheme.white_A700,
-                  textColor: appTheme.light_blue_900,
-                  borderColor: appTheme.light_blue_900,
-                  isFullWidth: true,
-                ),
-              ),
-            ],
+          SizedBox(height: 10.h),
+          CustomButton(
+            text: 'Withdraw',
+            onPressed: onWithdraw,
+            backgroundColor: appTheme.white_A700,
+            textColor: appTheme.light_blue_900,
+            borderColor: appTheme.light_blue_900,
+            isFullWidth: true,
           ),
         ],
       ),
