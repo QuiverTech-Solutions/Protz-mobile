@@ -5,11 +5,17 @@ import 'package:protz/customer/theme/text_style_helper.dart';
 import 'package:protz/customer/theme/theme_helper.dart';
 import 'package:protz/shared/widgets/custom_button.dart';
 
+enum DashboardWalletCardVariant { defaultCard, account }
+
 class DashboardWalletCard extends StatelessWidget {
   final WalletInfo walletInfo;
   final String? accountOwnerName;
   final String? serviceLabel;
   final VoidCallback? onWithdraw;
+  final VoidCallback? onViewBalance;
+  final DashboardWalletCardVariant variant;
+  final String? withdrawLabel;
+  final String? viewBalanceLabel;
 
   const DashboardWalletCard({
     super.key,
@@ -17,6 +23,10 @@ class DashboardWalletCard extends StatelessWidget {
     this.accountOwnerName,
     this.serviceLabel,
     this.onWithdraw,
+    this.onViewBalance,
+    this.variant = DashboardWalletCardVariant.defaultCard,
+    this.withdrawLabel,
+    this.viewBalanceLabel,
   });
 
   @override
@@ -85,14 +95,39 @@ class DashboardWalletCard extends StatelessWidget {
             ],
           ),
           SizedBox(height: 10.h),
-          CustomButton(
-            text: 'Withdraw',
-            onPressed: onWithdraw,
-            backgroundColor: appTheme.white_A700,
-            textColor: appTheme.light_blue_900,
-            borderColor: appTheme.light_blue_900,
-            isFullWidth: true,
-          ),
+          if (variant == DashboardWalletCardVariant.defaultCard)
+            CustomButton(
+              text: withdrawLabel ?? 'Withdraw',
+              onPressed: onWithdraw,
+              backgroundColor: appTheme.white_A700,
+              textColor: appTheme.light_blue_900,
+              borderColor: appTheme.light_blue_900,
+              isFullWidth: true,
+            ),
+          if (variant == DashboardWalletCardVariant.account)
+            Row(
+              children: [
+                Expanded(
+                  child: CustomButton(
+                    text: withdrawLabel ?? 'Withdraw',
+                    onPressed: onWithdraw,
+                    backgroundColor: appTheme.white_A700,
+                    textColor: appTheme.light_blue_900,
+                    borderColor: appTheme.light_blue_900,
+                  ),
+                ),
+                SizedBox(width: 12.h),
+                Expanded(
+                  child: CustomButton(
+                    text: viewBalanceLabel ?? 'View Balance',
+                    onPressed: onViewBalance,
+                    backgroundColor: appTheme.white_A700,
+                    textColor: appTheme.light_blue_900,
+                    borderColor: appTheme.light_blue_900,
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
