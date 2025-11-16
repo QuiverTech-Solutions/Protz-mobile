@@ -53,14 +53,17 @@ class SPAchievementTile extends StatelessWidget {
               Divider(height: 1, color: const Color(0xFFE5E7EB)),
               SizedBox(height: 8.h),
               Center(
-                child: Text(
-                  caption,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 10.fSize,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF909090),
+                child: SizedBox(
+                  height: 40.h,
+                  child: Text(
+                    caption,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 10.fSize,
+                      fontWeight: FontWeight.w400,
+                      color: const Color(0xFF909090),
+                    ),
                   ),
                 ),
               ),
@@ -96,14 +99,17 @@ class SPAchievementTile extends StatelessWidget {
           Divider(height: 1, color: const Color(0xFFE5E7EB)),
           SizedBox(height: 8.h),
           Center(
-            child: Text(
-              caption,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                fontSize: 10.fSize,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF909090),
+            child: SizedBox(
+              height: 40.h,
+              child: Text(
+                caption,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 10.fSize,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF909090),
+                ),
               ),
             ),
           ),
