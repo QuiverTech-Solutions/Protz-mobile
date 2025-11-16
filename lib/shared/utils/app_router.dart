@@ -8,8 +8,9 @@ import 'package:protz/service_provider/screens/WD_dashboard/sp_water_order_statu
 import 'package:protz/service_provider/screens/sp_order_requests.dart';
 import 'package:protz/service_provider/screens/TW_dashboard/sp_towing_order_status.dart';
 import 'package:protz/service_provider/screens/sp_finances_screen.dart';
+import 'package:protz/service_provider/screens/sp_account_page.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_dashboard_screen.dart';
-import '../../customer/screens/acount_screens/account_screen.dart';
+import '../../shared/screens/account_settings_screen.dart';
 import '../../customer/screens/acount_screens/delete_account_screen.dart';
 import '../models/service_request.dart';
 import '../../auth/screens/new_password_screen.dart';
@@ -140,7 +141,15 @@ class AppRouter {
         path: AppRoutes.accountSettings,
         name: AppRouteNames.accountSettings,
         pageBuilder: (context, state) => CustomTransitions.slideTransition(
-          child: const AccountScreen(),
+          child: const AccountSettingsScreen(isProvider: false),
+          state: state,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.providerAccountSettings,
+        name: AppRouteNames.providerAccountSettings,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: const AccountSettingsScreen(isProvider: true),
           state: state,
         ),
       ),
@@ -328,11 +337,7 @@ class AppRouter {
             path: 'profile',
             name: AppRouteNames.providerProfile,
             pageBuilder: (context, state) => CustomTransitions.slideTransition(
-              child: const Scaffold(
-                body: Center(
-                  child: Text('Provider Profile - Coming Soon'),
-                ),
-              ),
+              child: const SPAccountPage(),
               state: state,
             ),
           ),
@@ -485,7 +490,9 @@ class AppRouter {
         path: AppRoutes.chatInbox,
         name: AppRouteNames.chatInbox,
         pageBuilder: (context, state) => CustomTransitions.slideTransition(
-          child: const ChatInboxScreen(),
+          child: ChatInboxScreen(
+            isProvider: state.uri.queryParameters['ctx'] == 'provider',
+          ),
           state: state,
         ),
       ),
@@ -498,6 +505,7 @@ class AppRouter {
             contactName: state.uri.queryParameters['contactName'] ?? 'Unknown',
             contactSubtitle: state.uri.queryParameters['contactSubtitle'] ?? '',
             contactAvatar: state.uri.queryParameters['contactAvatar'] ?? '',
+            isProvider: state.uri.queryParameters['ctx'] == 'provider',
           ),
           state: state,
         ),
