@@ -340,10 +340,7 @@ class _SPAccountPageState extends State<SPAccountPage> {
   Widget _buildAccountSettingsButton(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Placeholder for dedicated provider account settings screen
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account Settings coming soon')),
-        );
+        context.push(AppRoutes.providerAccountSettings);
       },
       child: Container(
         height: ResponsiveExtension(48).h,
@@ -402,7 +399,7 @@ class _SPAccountPageState extends State<SPAccountPage> {
                 title: 'Verified',
                 caption: 'Get your account verified',
                 icon: Icons.verified,
-                active: user?.isVerified ?? false,
+                active: user?.isVerified ?? true,
               ),
             ),
             SizedBox(width: 12.h),

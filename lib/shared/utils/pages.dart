@@ -79,6 +79,7 @@ class AppRoutes {
   static const String payment = '/customer/payment';
   static const String history = '/customer/history';
   static const String accountSettings = '/customer/account';
+  static const String providerAccountSettings = '/provider/account';
   static const String customerProfile = '/customer/profile';
   static const String wallet = '/customer/wallet';
   static const String addMobileMoney = '/customer/add-mobile-money';
@@ -164,6 +165,7 @@ class AppRouteNames {
   static const String payment = 'payment';
   static const String history = 'history';
   static const String accountSettings = 'account-settings';
+  static const String providerAccountSettings = 'provider-account-settings';
   static const String customerProfile = 'customer-profile';
   static const String wallet = 'wallet';
   static const String addMobileMoney = 'add-mobile-money';
