@@ -19,7 +19,7 @@ class SPAchievementTile extends StatelessWidget {
   Widget build(BuildContext context) {
     if (active) {
       return Container(
-        height: 120.h,
+        //height: 120.h,
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -36,7 +36,7 @@ class SPAchievementTile extends StatelessWidget {
           ),
           padding: EdgeInsets.all(12.h),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Icon(icon, color: appTheme.light_blue_900, size: 24.h),
               SizedBox(height: 12.h),
@@ -44,7 +44,7 @@ class SPAchievementTile extends StatelessWidget {
                 title,
                 style: TextStyle(
                   fontFamily: 'Poppins',
-                  fontSize: 14.fSize,
+                  fontSize: 12.fSize,
                   fontWeight: FontWeight.w600,
                   color: appTheme.light_blue_900,
                 ),
@@ -52,13 +52,16 @@ class SPAchievementTile extends StatelessWidget {
               SizedBox(height: 8.h),
               Divider(height: 1, color: const Color(0xFFE5E7EB)),
               SizedBox(height: 8.h),
-              Text(
-                caption,
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontSize: 10.fSize,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF909090),
+              Center(
+                child: Text(
+                  caption,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 10.fSize,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF909090),
+                  ),
                 ),
               ),
             ],
@@ -68,7 +71,7 @@ class SPAchievementTile extends StatelessWidget {
     }
 
     return Container(
-      height: 120.h,
+      //height: 120.h,
       decoration: BoxDecoration(
         color: const Color(0xFFF5F5F7),
         borderRadius: BorderRadius.circular(12.h),
@@ -76,7 +79,7 @@ class SPAchievementTile extends StatelessWidget {
       ),
       padding: EdgeInsets.all(12.h),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Icon(icon, color: const Color(0xFF909090), size: 24.h),
           SizedBox(height: 12.h),
@@ -84,19 +87,24 @@ class SPAchievementTile extends StatelessWidget {
             title,
             style: TextStyle(
               fontFamily: 'Poppins',
-              fontSize: 14.fSize,
+              fontSize: 12.fSize,
               fontWeight: FontWeight.w600,
               color: const Color(0xFF909090),
             ),
           ),
-          SizedBox(height: 6.h),
-          Text(
-            caption,
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 10.fSize,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF909090),
+          SizedBox(height: 8.h),
+          Divider(height: 1, color: const Color(0xFFE5E7EB)),
+          SizedBox(height: 8.h),
+          Center(
+            child: Text(
+              caption,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 10.fSize,
+                fontWeight: FontWeight.w400,
+                color: const Color(0xFF909090),
+              ),
             ),
           ),
         ],
