@@ -53,7 +53,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      await _authService.forgotPassword(emailOrPhone: _phoneController.text.trim());
+      await _authService.sendOtp(phoneNumber: _phoneController.text.trim());
       setState(() {
         _successMessage = 'OTP sent successfully to your phone number';
       });

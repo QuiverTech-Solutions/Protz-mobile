@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/exceptions/auth_exceptions.dart';
 import '../services/new_auth_service.dart';
+import '../../shared/utils/error_handler.dart';
 
 class OtpVerificationScreen extends StatefulWidget {
   final String phoneNumber;
@@ -26,6 +28,15 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   String? _successMessage;
   int _resendTimer = 60;
   bool _canResend = false;
+
+  String _formatPhoneNumber(String phoneNumber) {
+    final clean = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    if (clean.startsWith('+233')) return clean;
+    if (clean.startsWith('233')) return '+$clean';
+    if (clean.startsWith('0') && clean.length >= 10) return '+233${clean.substring(1)}';
+    if (clean.length == 9) return '+233$clean';
+    return clean;
+  }
 
   @override
   void initState() {
@@ -100,8 +111,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
     try {
       // Call API to verify OTP
+      final phone = _formatPhoneNumber(widget.phoneNumber);
       final user = await _authService.verifyOtp(
-        userId: 'temp_user_id', // This should be passed from the previous screen
+        phoneNumber: phone,
         otpCode: otpCode,
       );
       
@@ -113,6 +125,10 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       context.pushNamed('new-password', queryParameters: {
         'phone': widget.phoneNumber,
         'otp': otpCode,
+      });
+    } on AuthException catch (e) {
+      setState(() {
+        _errorMessage = ErrorHandler.getUserFriendlyMessage(e);
       });
     } catch (e) {
       setState(() {
@@ -134,7 +150,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     });
 
     try {
-      await _authService.forgotPassword(emailOrPhone: widget.phoneNumber);
+      final phone = _formatPhoneNumber(widget.phoneNumber);
+      await _authService.sendOtp(phoneNumber: phone);
       
       setState(() {
         _successMessage = 'OTP sent successfully!';
