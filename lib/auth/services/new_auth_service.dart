@@ -96,16 +96,20 @@ class AuthService {
       // Check if response contains access_token (OAuth2 format)
       if (response.data!.containsKey('access_token')) {
         developer.log('AuthService: OAuth2 token response detected');
-        
-        final authResponse = AuthResponse.fromJson(response.data!);
-        developer.log('AuthService: Auth token parsed - Type: ${authResponse.tokenType}, Expires: ${authResponse.expiresIn}');
-        
-        // Save the token
+        final accessToken = response.data!['access_token'] as String?;
+        final tokenType = (response.data!['token_type'] as String?) ?? 'Bearer';
+        final refreshToken = response.data!['refresh_token'] as String?;
+        final expiresIn = response.data!['expires_in'] is int
+            ? response.data!['expires_in'] as int
+            : int.tryParse('${response.data!['expires_in']}');
+        if (accessToken == null || accessToken.isEmpty) {
+          throw const ServerException('Missing access token');
+        }
         await _tokenStorage.saveToken(
-          accessToken: authResponse.accessToken,
-          tokenType: authResponse.tokenType ?? 'Bearer',
-          refreshToken: authResponse.refreshToken,
-          expiresIn: authResponse.expiresIn,
+          accessToken: accessToken,
+          tokenType: tokenType,
+          refreshToken: refreshToken,
+          expiresIn: expiresIn,
         );
         
         developer.log('AuthService: Tokens saved successfully');
@@ -144,17 +148,12 @@ class AuthService {
           return fallbackUser;
         }
       } else {
-        // Direct user data response
         developer.log('AuthService: Direct user data response detected');
-        
-        final user = User.fromJson(response.data!);
-        developer.log('AuthService: User data parsed - ID: ${user.id}, Email: ${user.email}');
-        
-        // Store user data
+        final mapped = _mapProfileWithContextToUserJson(response.data!);
+        final user = User.fromJson(mapped);
         _currentUser = user;
         await _tokenStorage.saveUser(user);
         _userController.add(_currentUser);
-
         developer.log('AuthService: Login completed successfully for user: ${user.id}');
         return user;
       }
@@ -180,8 +179,6 @@ class AuthService {
     }
   }
 
-  /// User registration
-  /// POST /users/register
   Future<User> register(RegisterRequest registerRequest) async {
     try {
       developer.log('AuthService: Starting registration process');
@@ -189,38 +186,10 @@ class AuthService {
       developer.log('AuthService: User type: ${registerRequest.userType}');
       developer.log('AuthService: Email: ${registerRequest.email}');
       developer.log('AuthService: Phone: ${registerRequest.phoneNumber}');
-
-      // Create the new API-compliant request using ProfileWithUserRequest
-      final profileWithUserRequest = ProfileWithUserRequest.fromFormData(
-        firstName: registerRequest.firstName,
-        lastName: registerRequest.lastName,
-        middleName: registerRequest.middleName,
-        userType: registerRequest.userType,
-        phoneNumber: registerRequest.phoneNumber,
-        alternatePhone: registerRequest.alternatePhone,
-        email: registerRequest.email,
-        profilePhotoUrl: registerRequest.profilePhotoUrl ?? "",
-        emergencyContactName: registerRequest.emergencyContactName,
-        emergencyContactPhone: registerRequest.emergencyContactPhone,
-        primaryAddress: registerRequest.primaryAddress,
-        city: registerRequest.city,
-        state: registerRequest.state,
-        dateOfBirth: registerRequest.dateOfBirth,
-        gender: registerRequest.gender ?? "not_specified",
-        password: registerRequest.password,
-        emailVerified: false,
-        phoneVerified: true,
-      );
-
-      developer.log('AuthService: ProfileWithUserRequest created successfully');
-      developer.log('AuthService: Registration request data structure: ${profileWithUserRequest.toJson().keys.toList()}');
-
       final response = await _dioClient.post<Map<String, dynamic>>(
         '/users/register',
-        data: profileWithUserRequest.toJson(),
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
+        data: registerRequest.toJson(),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       developer.log('AuthService: Registration response received - Status: ${response.statusCode}');
@@ -233,19 +202,22 @@ class AuthService {
 
       developer.log('AuthService: Registration response data keys: ${response.data!.keys.toList()}');
 
-      // Check if response contains access_token (OAuth2 format)
       if (response.data!.containsKey('access_token')) {
         developer.log('AuthService: OAuth2 token response detected in registration');
-        
-        final authResponse = AuthResponse.fromJson(response.data!);
-        developer.log('AuthService: Auth token parsed - Type: ${authResponse.tokenType}, Expires: ${authResponse.expiresIn}');
-        
-        // Save the token
+        final accessToken = response.data!['access_token'] as String?;
+        final tokenType = (response.data!['token_type'] as String?) ?? 'Bearer';
+        final refreshToken = response.data!['refresh_token'] as String?;
+        final expiresIn = response.data!['expires_in'] is int
+            ? response.data!['expires_in'] as int
+            : int.tryParse('${response.data!['expires_in']}');
+        if (accessToken == null || accessToken.isEmpty) {
+          throw const ServerException('Missing access token');
+        }
         await _tokenStorage.saveToken(
-          accessToken: authResponse.accessToken,
-          tokenType: authResponse.tokenType ?? 'Bearer',
-          refreshToken: authResponse.refreshToken,
-          expiresIn: authResponse.expiresIn,
+          accessToken: accessToken,
+          tokenType: tokenType,
+          refreshToken: refreshToken,
+          expiresIn: expiresIn,
         );
         
         developer.log('AuthService: Tokens saved successfully');
@@ -257,17 +229,12 @@ class AuthService {
         developer.log('AuthService: Registration completed successfully for user: ${user.id}');
         return user;
       } else {
-        // Direct user data response
         developer.log('AuthService: Direct user data response detected in registration');
-        
-        final registeredUser = User.fromJson(response.data!);
-        developer.log('AuthService: User data parsed - ID: ${registeredUser.id}, Email: ${registeredUser.email}');
-        
-        // Store user data
+        final mapped = _mapProfileWithContextToUserJson(response.data!);
+        final registeredUser = User.fromJson(mapped);
         _currentUser = registeredUser;
         await _tokenStorage.saveUser(registeredUser);
         _userController.add(_currentUser);
-
         developer.log('AuthService: Registration completed successfully for user: ${registeredUser.id}');
         return registeredUser;
       }
@@ -315,7 +282,9 @@ class AuthService {
 
       developer.log('AuthService: GetMe response data keys: ${response.data!.keys.toList()}');
 
-      final user = User.fromJson(response.data!);
+      final raw = response.data!;
+      final mapped = _mapProfileWithContextToUserJson(raw);
+      final user = User.fromJson(mapped);
       developer.log('AuthService: User data parsed - ID: ${user.id}, Email: ${user.email}, Role: ${user.role}');
       
       // Update stored user data
@@ -404,52 +373,63 @@ class AuthService {
     }
   }
 
-  /// Verify OTP
-  /// POST /users/verify
+  Future<void> sendOtp({
+    required String phoneNumber,
+  }) async {
+    try {
+      final payload = {
+        'phone_number': phoneNumber,
+      };
+      final response = await _dioClient.post<Map<String, dynamic>>(
+        '/users/otp/send/',
+        data: payload,
+      );
+      if (response.data == null) {
+        throw const ServerException('Invalid response from server');
+      }
+    } on DioException catch (e) {
+      throw ErrorHandler.handleDioError(e);
+    } catch (e) {
+      throw ErrorHandler.handleGeneralError(e);
+    }
+  }
+
   Future<User> verifyOtp({
-    required String userId,
+    required String phoneNumber,
     required String otpCode,
   }) async {
     try {
-      developer.log('AuthService: Verifying OTP for user: $userId');
-
-      final otpRequest = OtpRequest(
-        userId: userId,
-        otpCode: otpCode,
-      );
-
-      developer.log('AuthService: OTP verification request: ${otpRequest.toJson()}');
-
+      final payload = {
+        'phone_number': phoneNumber,
+        'otp': otpCode,
+      };
       final response = await _dioClient.post<Map<String, dynamic>>(
-        '/users/verify',
-        data: otpRequest.toJson(),
+        '/users/otp/verify',
+        data: payload,
       );
-
-      developer.log('AuthService: OTP verification response: ${response.statusCode}');
-
       if (response.data == null) {
-        developer.log('AuthService: Invalid OTP verification response');
         throw const ServerException('Invalid response from server');
       }
-
-      developer.log('AuthService: OTP verification response data: ${response.data}');
-
-      final user = User.fromJson(response.data!);
-      
-      // Update stored user data
-      _currentUser = user;
-      await _tokenStorage.saveUser(user);
-      _userController.add(_currentUser);
-
-      developer.log('AuthService: OTP verification successful');
+      final accessToken = response.data!['access_token'] as String?;
+      final tokenType = (response.data!['token_type'] as String?) ?? 'Bearer';
+      final refreshToken = response.data!['refresh_token'] as String?;
+      final expiresIn = response.data!['expires_in'] is int
+          ? response.data!['expires_in'] as int
+          : int.tryParse('${response.data!['expires_in']}');
+      if (accessToken == null || accessToken.isEmpty) {
+        throw const ServerException('Missing access token');
+      }
+      await _tokenStorage.saveToken(
+        accessToken: accessToken,
+        tokenType: tokenType,
+        refreshToken: refreshToken,
+        expiresIn: expiresIn,
+      );
+      final user = await getMe();
       return user;
     } on DioException catch (e) {
-      developer.log('AuthService: Dio error during OTP verification: ${e.message}');
-      developer.log('AuthService: OTP verification error response: ${e.response?.data}');
       throw ErrorHandler.handleDioError(e);
-    } catch (e, stackTrace) {
-      developer.log('AuthService: General error during OTP verification: $e');
-      developer.log('AuthService: Stack trace: $stackTrace');
+    } catch (e) {
       throw ErrorHandler.handleGeneralError(e);
     }
   }
@@ -659,5 +639,60 @@ class AuthService {
   void dispose() {
     developer.log('AuthService: Disposing AuthService');
     _userController.close();
+  }
+
+  Map<String, dynamic> _mapProfileWithContextToUserJson(Map<String, dynamic> raw) {
+    final profile = raw['profile'] is Map<String, dynamic> ? raw['profile'] as Map<String, dynamic> : raw;
+    final sp = raw['service_provider'] is Map<String, dynamic> ? raw['service_provider'] as Map<String, dynamic> : null;
+    final firstName = (profile['first_name'] ?? raw['first_name']) as String?;
+    final lastName = (profile['last_name'] ?? raw['last_name']) as String?;
+    final email = (profile['email'] ?? raw['email']) as String? ?? 'user@example.com';
+    final phone = (profile['phone_number'] ?? raw['phone_number']) as String? ?? '+0000000000';
+    final name = ((firstName ?? '') + ' ' + (lastName ?? '')).trim();
+    final roleStr = (raw['role'] ?? profile['role'] ?? raw['user_type']) as String?;
+    final roleMapped = () {
+      switch (roleStr) {
+        case 'user':
+        case 'customer':
+          return 'user';
+        case 'service_provider':
+        case 'provider':
+          return 'service_provider';
+        case 'admin':
+        case 'administrator':
+          return 'administrator';
+        default:
+          return 'user';
+      }
+    }();
+    final id = (raw['user_id'] ?? raw['id'] ?? profile['user_id'] ?? profile['id'])?.toString() ?? 'unknown';
+    final createdAt = raw['created_at'] ?? profile['created_at'];
+    final updatedAt = raw['updated_at'] ?? profile['updated_at'];
+    final profileImageUrl = (profile['profile_photo_url'] ?? raw['profile_image_url']) as String?;
+    final isVerified = (raw['is_verified'] ?? profile['is_verified']) as bool? ?? false;
+    final isActive = (raw['is_active'] ?? profile['is_active']) as bool? ?? true;
+    final isAvailable = sp == null ? null : (sp['is_available'] as bool?);
+    final isOnline = sp == null ? null : (sp['is_online'] as bool?);
+    return {
+      'id': id,
+      'first_name': firstName,
+      'last_name': lastName,
+      'name': name.isEmpty ? (email.isNotEmpty ? email : phone) : name,
+      'email': email,
+      'phone_number': phone,
+      'user_type': roleMapped,
+      'profile_image_url': profileImageUrl,
+      'date_of_birth': profile['date_of_birth'],
+      'gender': profile['gender'],
+      'address': profile['primary_address'] ?? raw['address'],
+      'emergency_contact_name': profile['emergency_contact_name'],
+      'emergency_contact_phone': profile['emergency_contact_phone'],
+      'created_at': createdAt ?? DateTime.now().toIso8601String(),
+      'updated_at': updatedAt ?? DateTime.now().toIso8601String(),
+      'is_verified': isVerified,
+      'is_active': isActive,
+      'is_available': isAvailable,
+      'is_online': isOnline,
+    };
   }
 }
