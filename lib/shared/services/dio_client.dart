@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'token_storage.dart';
+import '../utils/app_constants.dart';
 
 class DioClient {
-  static const String _baseUrl =
-      'https://protz-d3f3c6008874.herokuapp.com/api/v1';
+  static const String _baseUrl = AppConstants.baseUrl;
 
   late final Dio _dio;
   final TokenStorage _tokenStorage = TokenStorage.instance;
