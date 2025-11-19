@@ -566,10 +566,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       developer.log('SignUpScreen: Registration successful, user ID: ${user.id}');
 
-      // Registration successful, show phone verification dialog
+      // Registration successful, send OTP and show phone verification dialog
       if (mounted) {
-        developer.log('SignUpScreen: Showing phone verification dialog');
-        _showPhoneVerificationDialog(user.id, user.phoneNumber);
+        await _authService.sendOtp(phoneNumber: user.phoneNumber);
+        _showPhoneVerificationDialog(user.phoneNumber);
       }
     } on AuthException catch (e) {
       developer.log('SignUpScreen: AuthException during registration: ${e.message}');
@@ -604,14 +604,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
   }
 
-  void _showPhoneVerificationDialog(String userId, String phoneNumber) {
+  void _showPhoneVerificationDialog(String phoneNumber) {
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return PhoneVerificationDialog(
           phoneNumber: phoneNumber,
-          userId: userId,
           onVerificationSuccess: () {
             // Navigate to appropriate dashboard based on user type
             final userRole = _authService.currentUser?.role ?? UserRole.customer;

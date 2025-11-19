@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import '../../shared/exceptions/auth_exceptions.dart';
 import '../services/new_auth_service.dart';
+import '../../shared/utils/error_handler.dart';
 
 class PhoneVerificationDialog extends StatefulWidget {
   final String phoneNumber;
-  final String userId;
   final VoidCallback? onVerificationSuccess;
   final VoidCallback? onCancel;
 
   const PhoneVerificationDialog({
     super.key,
     required this.phoneNumber,
-    required this.userId,
     this.onVerificationSuccess,
     this.onCancel,
   });
@@ -30,6 +30,15 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
   String? _errorMessage;
   int _resendTimer = 60;
   bool _canResend = false;
+
+  String _formatPhoneNumber(String phoneNumber) {
+    final clean = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    if (clean.startsWith('+233')) return clean;
+    if (clean.startsWith('233')) return '+$clean';
+    if (clean.startsWith('0') && clean.length >= 10) return '+233${clean.substring(1)}';
+    if (clean.length == 9) return '+233$clean';
+    return clean;
+  }
 
   @override
   void initState() {
@@ -104,17 +113,22 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
 
     try {
       // Call API to verify OTP
+      final phone = _formatPhoneNumber(widget.phoneNumber);
       await _authService.verifyOtp(
-        userId: widget.userId,
+        phoneNumber: phone,
         otpCode: otpCode,
       );
       
       // Close dialog and call success callback
       Navigator.of(context).pop();
       widget.onVerificationSuccess?.call();
+    } on AuthException catch (e) {
+      setState(() {
+        _errorMessage = ErrorHandler.getUserFriendlyMessage(e);
+      });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Invalid verification code. Please try again.';
+        _errorMessage = 'Verification failed. Please try again.';
       });
     } finally {
       setState(() {
@@ -132,9 +146,12 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
     });
 
     try {
-      await _authService.forgotPassword(emailOrPhone: widget.phoneNumber);
+      final phone = _formatPhoneNumber(widget.phoneNumber);
+      await _authService.sendOtp(phoneNumber: phone);
       
       setState(() {
+        _errorMessage = null;
+        _canResend = false;
         _resendTimer = 60;
       });
       _startResendTimer();
@@ -168,18 +185,32 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(24),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.9,
+            ),
+            child: AnimatedPadding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              duration: const Duration(milliseconds: 150),
+              curve: Curves.easeOut,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
               // Close button
               Align(
                 alignment: Alignment.topRight,
@@ -336,41 +367,46 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
               const SizedBox(height: 32),
               
               // Verify button
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _handleVerifyOTP,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF007AFF),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    disabledBackgroundColor: const Color(0xFFE5E5E5),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Verify Phone Number',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleVerifyOTP,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF007AFF),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              disabledBackgroundColor: const Color(0xFFE5E5E5),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Verify Phone Number',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

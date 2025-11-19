@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../services/new_auth_service.dart';
+import '../widgets/phone_verification_dialog.dart';
 import '../../shared/utils/pages.dart';
 import '../../shared/models/user.dart';
 import '../../shared/exceptions/auth_exceptions.dart';
@@ -23,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
-  bool _isEmailLogin = true; // Toggle between email and phone login
+  bool _isEmailLogin = false; // Default to phone login first
   bool _isPasswordVisible = false;
   String? _errorMessage;
 
@@ -80,12 +81,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
       developer.log('LoginScreen: Login successful, user ID: ${user.id}');
 
-      // Navigate to appropriate dashboard based on user type
-      UserRole userRole = user.role;
-      if (userRole == UserRole.customer) {
-        context.go(AppRoutes.customerHome);
-      } else {
-        context.go(AppRoutes.providerHome);
+      // Send OTP for verification after successful login (2FA)
+      final otpPhone = _isEmailLogin 
+          ? _formatPhoneNumber(user.phoneNumber)
+          : _formatPhoneNumber(_phoneController.text);
+      await _authService.sendOtp(phoneNumber: otpPhone);
+
+      // Show OTP dialog; navigate on success inside the dialog
+      if (mounted) {
+        _showPhoneVerificationDialog(otpPhone);
       }
     } on AuthException catch (e) {
       developer.log('LoginScreen: AuthException during login: ${e.message}');
@@ -140,6 +144,27 @@ class _LoginScreenState extends State<LoginScreen> {
     
     // Return as is if none of the above conditions match
     return cleanPhone;
+  }
+
+  void _showPhoneVerificationDialog(String phoneNumber) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return PhoneVerificationDialog(
+          phoneNumber: phoneNumber,
+          onVerificationSuccess: () {
+            final userRole = _authService.currentUser?.role ?? UserRole.customer;
+            if (userRole == UserRole.customer) {
+              context.go(AppRoutes.customerHome);
+            } else {
+              context.go(AppRoutes.providerHome);
+            }
+          },
+          onCancel: () {},
+        );
+      },
+    );
   }
 
   String? _validateInputs(String identifier, String password) {

@@ -100,11 +100,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
     try {
       // Call API to reset password
-      await _authService.resetPassword(
-        userId: 'temp_user_id', // This should be passed from the previous screen
-        otpCode: widget.otpCode,
-        newPassword: _passwordController.text,
-      );
+      await _authService.updateMe(password: _passwordController.text);
       
       setState(() {
         _successMessage = 'Password reset successfully!';
