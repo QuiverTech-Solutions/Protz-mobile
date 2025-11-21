@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../shared/utils/app_constants.dart';
 import '../../../shared/utils/pages.dart';
+import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/providers/service_types_provider.dart';
 
 class WaterDeliveryScreen2 extends StatefulWidget {
   final String? pickupLocation;
@@ -23,6 +26,8 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
   String? selectedVehicle;
   String? selectedUrgency;
   String? selectedRequirement;
+  String? selectedDeliveryMethod;
+  final TextEditingController _instructionsController = TextEditingController();
 
   final List<File> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
@@ -111,6 +116,7 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
                     _buildDropdown(
                       hint: '0',
                       value: selectedVehicle,
+                      options: const ['50', '100', '150', '200'],
                       onChanged: (value) {
                         setState(() {
                           selectedVehicle = value;
@@ -127,13 +133,29 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
                     _buildDropdown(
                       hint: 'Select time',
                       value: selectedUrgency,
+                      options: const ['ASAP', 'Morning', 'Afternoon', 'Evening'],
                       onChanged: (value) {
                         setState(() {
                           selectedUrgency = value;
                         });
                       },
                     ),
-        
+
+                    const SizedBox(height: 24),
+
+                    _buildLabel('Select delivery method'),
+                    const SizedBox(height: 8),
+                    _buildDropdown(
+                      hint: 'polytank',
+                      value: selectedDeliveryMethod,
+                      options: const ['polytank', 'direct_fill'],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedDeliveryMethod = value;
+                        });
+                      },
+                    ),
+
                     const SizedBox(height: 24),
         
                     // Special Requirements
@@ -141,7 +163,7 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
                     const SizedBox(height: 8),
                     SizedBox(
                       width: double.infinity,
-                      child: _buildLocationField('Special instructions'),
+                      child: _buildInstructionsInput(),
                     ),
         
                     const SizedBox(height: 20),
@@ -246,6 +268,7 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
   Widget _buildDropdown({
     required String hint,
     required String? value,
+    required List<String> options,
     required Function(String?) onChanged,
   }) {
     return Container(
@@ -267,7 +290,9 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
           ),
           value: value,
           icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade600),
-          items: const [],
+          items: options
+              .map((o) => DropdownMenuItem<String>(value: o, child: Text(o)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),
@@ -320,6 +345,30 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
     );
   }
 
+  Widget _buildInstructionsInput() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E5EA), width: 1),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: TextField(
+        controller: _instructionsController,
+        maxLines: 4,
+        style: const TextStyle(fontSize: 14, color: Color(0xFF1C1C1E)),
+        decoration: const InputDecoration(
+          hintText: 'Enter any special instructions',
+          hintStyle: TextStyle(fontSize: 14, color: Color(0xFF8E8E93)),
+          border: InputBorder.none,
+        ),
+      ),
+    );
+  }
+
   Widget _buildProceedButton() {
     return Container(
       width: 400,
@@ -331,7 +380,24 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {},
+          onTap: () async {
+            if ((widget.destination ?? '').isEmpty) {
+              _showSnackBar('Please set delivery address');
+              return;
+            }
+            if ((selectedVehicle ?? '0') == '0') {
+              _showSnackBar('Please select water quantity');
+              return;
+            }
+            final data = {
+              'pickupLocation': widget.pickupLocation ?? '',
+              'destination': widget.destination ?? '',
+              'quantity': selectedVehicle ?? '0',
+              'instructions': _instructionsController.text.trim(),
+              'deliveryMethod': selectedDeliveryMethod ?? 'polytank',
+            };
+            context.push(AppRoutes.waterCheckout, extra: data);
+          },
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
