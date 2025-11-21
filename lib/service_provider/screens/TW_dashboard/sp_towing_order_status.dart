@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../customer/core/utils/image_constant.dart';
 import '../../../customer/theme/text_style_helper.dart';
-import '../../../shared/widgets/custom_image_view.dart';
+import '../../../shared/widgets/live_tracking_map.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
 import '../../../shared/widgets/custom_button.dart';
 import '../../core/app_export.dart';
@@ -34,7 +34,7 @@ class _SPTowingOrderStatusState extends State<SPTowingOrderStatus> {
           SliverFillRemaining(
             child: Stack(
               children: [
-                Positioned.fill(child: _buildBanner()),
+                Positioned.fill(child: _buildMap()),
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withOpacity(0.25),
@@ -122,15 +122,10 @@ class _SPTowingOrderStatusState extends State<SPTowingOrderStatus> {
   }
 
 
-  Widget _buildBanner() {
+  Widget _buildMap() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
-      child: CustomImageView(
-        imagePath: ImageConstant.imgPlaceholder,
-        height: ResponsiveExtension(140).h,
-        width: double.infinity,
-        fit: BoxFit.cover,
-      ),
+      child: const LiveTrackingMap(isProviderContext: true),
     );
   }
 
