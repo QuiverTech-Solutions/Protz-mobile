@@ -5,7 +5,10 @@ import 'package:flutter/foundation.dart';
 import '../models/api_response.dart';
 import '../models/dashboard_data.dart';
 import '../models/service_provider.dart';
+import '../models/location_tracking.dart';
 import '../models/service_request.dart';
+import '../models/service_type.dart';
+import '../models/towing_type.dart';
 import '../utils/app_constants.dart';
 import 'token_storage.dart';
 
@@ -44,6 +47,26 @@ class ApiService {
     _dio.interceptors.add(_createLoggingInterceptor());
 
     _isInitialized = true;
+  }
+
+  /// Refresh runtime configuration if constants changed (e.g., baseUrl)
+  void refreshConfigIfNeeded() {
+    if (!_isInitialized) {
+      initialize();
+      return;
+    }
+    if (_dio.options.baseUrl != AppConstants.baseUrl) {
+      _dio.options.baseUrl = AppConstants.baseUrl;
+    }
+    _dio.options.connectTimeout = AppConstants.apiTimeout;
+    _dio.options.receiveTimeout = AppConstants.apiTimeout;
+    _dio.options.sendTimeout = AppConstants.apiTimeout;
+    _dio.options.headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'X-API-Version': AppConstants.apiVersion,
+      ..._dio.options.headers,
+    };
   }
 
   /// Get dashboard data for the home screen
@@ -235,6 +258,1348 @@ class ApiService {
     }
   }
 
+  /// Get active service types
+  Future<ApiResponse<List<ServiceTypePublic>>> getActiveServiceTypes() async {
+    try {
+      final response = await _dio.get('/service-types/active');
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items
+            .map((e) => ServiceTypePublic.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Active service types retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load active service types',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<ServiceTypePublic>> getServiceTypeByCode(String code) async {
+    try {
+      final response = await _dio.get('/service-types/code/$code');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> item = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final st = ServiceTypePublic.fromJson(item);
+        return ApiResponse.success(
+          message: 'Service type retrieved successfully',
+          data: st,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load service type',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get active towing types
+  Future<ApiResponse<List<TowingTypePublic>>> getActiveTowingTypes() async {
+    try {
+      final response = await _dio.get('/towing-types/active');
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items
+            .map((e) => TowingTypePublic.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Active towing types retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load active towing types',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get active providers (new endpoint per docs)
+  Future<ApiResponse<List<ServiceProvider>>> getActiveProviders({
+    required String serviceTypeId,
+    double? latitude,
+    double? longitude,
+    int? limit,
+  }) async {
+    try {
+      final queryParams = <String, dynamic>{
+        'service_type_id': serviceTypeId,
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
+        if (limit != null) 'limit': limit,
+      };
+      final response = await _dio.get('/service-providers/active', queryParameters: queryParams);
+      if (response.statusCode == 200) {
+        final List<dynamic> providersJson = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final providers = providersJson
+            .map((json) => _mapBackendProvider(json as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Active providers retrieved successfully',
+          data: providers,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load active providers',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  ServiceProvider _mapBackendProvider(Map<String, dynamic> json) {
+    final id = (json['id'] ?? '').toString();
+    final name = (json['business_name'] ?? 'Provider').toString();
+    final isAvailable = json['is_available'] == true;
+    final ratingStr = (json['rating'] ?? '0').toString();
+    final rating = double.tryParse(ratingStr) ?? 0.0;
+    final latStr = (json['current_latitude'] ?? '').toString();
+    final lngStr = (json['current_longitude'] ?? '').toString();
+    final lat = double.tryParse(latStr);
+    final lng = double.tryParse(lngStr);
+
+    return ServiceProvider(
+      id: id,
+      name: name,
+      serviceType: '',
+      phoneNumber: '',
+      email: null,
+      address: '',
+      currentLocation: (lat != null && lng != null)
+          ? LocationCoordinates(latitude: lat, longitude: lng)
+          : null,
+      serviceAreas: const [],
+      basePrice: 0,
+      pricePerUnit: 0,
+      currency: 'GHS',
+      rating: rating,
+      reviewCount: (json['total_completed_jobs'] is int) ? json['total_completed_jobs'] as int : 0,
+      estimatedArrival: null,
+      isAvailable: isAvailable,
+      profileImageUrl: null,
+      vehicles: null,
+      operatingHours: null,
+    );
+  }
+
+  /// Latest location for a provider
+  Future<ApiResponse<LocationTracking>> getLatestProviderLocation(String providerId) async {
+    try {
+      final response = await _dio.get('/api/v1/location-tracking/provider/$providerId/latest');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final item = LocationTracking.fromJson(body);
+        return ApiResponse.success(
+          message: 'Latest provider location retrieved',
+          data: item,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load latest provider location',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Location history for a request
+  Future<ApiResponse<List<LocationTracking>>> getRequestLocationHistory(
+    String requestId, {
+    int? limit,
+  }) async {
+    try {
+      final response = await _dio.get('/api/v1/location-tracking/request/$requestId/history', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items
+            .map((e) => LocationTracking.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Request location history retrieved',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load request location history',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Location history for a provider within time range
+  Future<ApiResponse<List<LocationTracking>>> getProviderLocationHistory(
+    String providerId, {
+    DateTime? start,
+    DateTime? end,
+    int? limit,
+  }) async {
+    try {
+      final query = <String, dynamic>{
+        if (start != null) 'start_time': start.toIso8601String(),
+        if (end != null) 'end_time': end.toIso8601String(),
+        if (limit != null) 'limit': limit,
+      };
+      final response = await _dio.get('/api/v1/location-tracking/provider/$providerId/history', queryParameters: query);
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items
+            .map((e) => LocationTracking.fromJson(e as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Provider location history retrieved',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load provider location history',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Create towing-specific request after creating base service request
+  Future<ApiResponse<void>> createTowingRequest({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _dio.post('/towing-requests/', data: data);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return ApiResponse.success(
+          message: 'Towing request created successfully',
+          data: null,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to create towing request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTowingRequests({
+    String? serviceRequestId,
+    String? vehicleId,
+    String? towingTypeId,
+    String? vehicleCondition,
+    bool? isEmergency,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final query = <String, dynamic>{
+        if (serviceRequestId != null) 'service_request_id': serviceRequestId,
+        if (vehicleId != null) 'vehicle_id': vehicleId,
+        if (towingTypeId != null) 'towing_type_id': towingTypeId,
+        if (vehicleCondition != null) 'vehicle_condition': vehicleCondition,
+        if (isEmergency != null) 'is_emergency': isEmergency,
+        if (limit != null) 'limit': limit,
+        if (offset != null) 'offset': offset,
+      };
+      final response = await _dio.get('/towing-requests/all', queryParameters: query);
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Towing requests retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load towing requests',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getEmergencyTowingRequests({int? limit}) async {
+    try {
+      final response = await _dio.get('/towing-requests/emergency', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Emergency towing requests retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load emergency towing requests',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTowingRequestsByCondition(String condition, {int? limit}) async {
+    try {
+      final response = await _dio.get('/towing-requests/condition/$condition', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Towing requests by condition retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load towing requests by condition',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTowingRequestsByVehicle(String vehicleId, {int? limit}) async {
+    try {
+      final response = await _dio.get('/towing-requests/vehicle/$vehicleId', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Towing requests for vehicle retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load towing requests for vehicle',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getTowingRequestsByType(String towingTypeId, {int? limit}) async {
+    try {
+      final response = await _dio.get('/towing-requests/type/$towingTypeId', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Towing requests by type retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load towing requests by type',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getTowingRequestById(String id) async {
+    try {
+      final response = await _dio.get('/towing-requests/$id');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Towing request retrieved successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load towing request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> updateTowingRequest(String id, Map<String, dynamic> update) async {
+    try {
+      final response = await _dio.patch('/towing-requests/$id', data: update);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Towing request updated successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to update towing request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<void>> deleteTowingRequest(String id) async {
+    try {
+      final response = await _dio.delete('/towing-requests/$id');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return ApiResponse.success(
+          message: 'Towing request deleted',
+          data: null,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to delete towing request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getTowingRequestByServiceRequest(String serviceRequestId) async {
+    try {
+      final response = await _dio.get('/towing-requests/service-request/$serviceRequestId');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Towing request by service request retrieved successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load towing request by service request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> markTowingRequestEmergency(String id) async {
+    try {
+      final response = await _dio.patch('/towing-requests/$id/emergency');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Towing request marked as emergency',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to mark towing request as emergency',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> assignTowingType(String id, String towingTypeId) async {
+    try {
+      final response = await _dio.patch('/towing-requests/$id/assign-type/$towingTypeId');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Towing type assigned',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to assign towing type',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> updateTowingCondition(String id, String condition) async {
+    try {
+      final response = await _dio.patch('/towing-requests/$id/condition/$condition');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Towing condition updated',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to update towing condition',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Create water-specific request after creating base service request
+  Future<ApiResponse<void>> createWaterRequest({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _dio.post('/water-requests/', data: data);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return ApiResponse.success(
+          message: 'Water request created successfully',
+          data: null,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to create water request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get current user profile (ProfilePublic)
+  Future<ApiResponse<Map<String, dynamic>>> getProfileMe() async {
+    try {
+      final response = await _dio.get('/profiles/me');
+      if (response.statusCode == 200) {
+        final data = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Profile retrieved successfully',
+          data: data,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load profile',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Patch current user profile
+  Future<ApiResponse<Map<String, dynamic>>> patchProfileMe(Map<String, dynamic> update) async {
+    try {
+      final response = await _dio.patch('/profiles/me', data: update);
+      if (response.statusCode == 200) {
+        final data = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Profile updated successfully',
+          data: data,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to update profile',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> patchUserMe(Map<String, dynamic> update) async {
+    try {
+      final response = await _dio.patch('/users/me', data: update);
+      if (response.statusCode == 200) {
+        final data = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'User updated successfully',
+          data: data,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to update user',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getPayments({int? limit}) async {
+    try {
+      final response = await _dio.get('/payments/', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Payments retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load payments',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> createPayment({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _dio.post('/payments/', data: data);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Payment created successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to create payment',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> createWallet({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _dio.post('/wallets/', data: data);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Wallet created successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to create wallet',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getMyMainWallet() async {
+    try {
+      final response = await _dio.get('/wallets/my-main-wallet');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Main wallet retrieved successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load main wallet',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyWallets() async {
+    try {
+      final response = await _dio.get('/wallets/my-wallets');
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Wallets retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load wallets',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> creditWallet({
+    required String walletId,
+    required double amount,
+    String? description,
+  }) async {
+    try {
+      final response = await _dio.post('/wallets/$walletId/credit', queryParameters: {
+        'amount': amount,
+        if (description != null) 'description': description,
+      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Wallet credited successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to credit wallet',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> debitWallet({
+    required String walletId,
+    required double amount,
+    String? description,
+  }) async {
+    try {
+      final response = await _dio.post('/wallets/$walletId/debit', queryParameters: {
+        'amount': amount,
+        if (description != null) 'description': description,
+      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Wallet debited successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to debit wallet',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getPaymentsAll({
+    String? profileId,
+    String? serviceRequestId,
+    String? paymentMethod,
+    String? status,
+    num? minAmount,
+    num? maxAmount,
+    String? startDate,
+    String? endDate,
+    int? limit,
+    int? offset,
+  }) async {
+    try {
+      final query = <String, dynamic>{
+        if (profileId != null) 'profile_id': profileId,
+        if (serviceRequestId != null) 'service_request_id': serviceRequestId,
+        if (paymentMethod != null) 'payment_method': paymentMethod,
+        if (status != null) 'status': status,
+        if (minAmount != null) 'min_amount': minAmount,
+        if (maxAmount != null) 'max_amount': maxAmount,
+        if (startDate != null) 'start_date': startDate,
+        if (endDate != null) 'end_date': endDate,
+        if (limit != null) 'limit': limit,
+        if (offset != null) 'offset': offset,
+      };
+      final response = await _dio.get('/payments/all', queryParameters: query);
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Payments retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load payments',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMyPayments({String? status, String? paymentMethod, int? limit}) async {
+    try {
+      final response = await _dio.get('/payments/my-payments', queryParameters: {
+        if (status != null) 'status': status,
+        if (paymentMethod != null) 'payment_method': paymentMethod,
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'My payments retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load my payments',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getPaymentsForServiceRequest(String serviceRequestId) async {
+    try {
+      final response = await _dio.get('/payments/service-request/$serviceRequestId');
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Payments for service request retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load payments for service request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getPendingPayments({int? limit}) async {
+    try {
+      final response = await _dio.get('/payments/pending', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Pending payments retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load pending payments',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getSuccessfulPayments({int? limit}) async {
+    try {
+      final response = await _dio.get('/payments/successful', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Successful payments retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load successful payments',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getFailedPayments({int? limit}) async {
+    try {
+      final response = await _dio.get('/payments/failed', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Failed payments retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load failed payments',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<List<Map<String, dynamic>>>> getRecentPayments({int? days, int? limit}) async {
+    try {
+      final response = await _dio.get('/payments/recent', queryParameters: {
+        if (days != null) 'days': days,
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Recent payments retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load recent payments',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getPaymentById(String id) async {
+    try {
+      final response = await _dio.get('/payments/$id');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Payment retrieved successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load payment',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> updatePayment(String id, {String? status, DateTime? processedAt}) async {
+    try {
+      final payload = <String, dynamic>{
+        if (status != null) 'status': status,
+        if (processedAt != null) 'processed_at': processedAt.toIso8601String(),
+      };
+      final response = await _dio.patch('/payments/$id', data: payload);
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Payment updated successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to update payment',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<void>> deletePayment(String id) async {
+    try {
+      final response = await _dio.delete('/payments/$id');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return ApiResponse.success(
+          message: 'Payment deleted',
+          data: null,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to delete payment',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> getPaymentByReference(String paymentReference) async {
+    try {
+      final response = await _dio.get('/payments/reference/$paymentReference');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Payment by reference retrieved successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load payment by reference',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> confirmPayment(String id) async {
+    try {
+      final response = await _dio.patch('/payments/$id/confirm');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Payment confirmed',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to confirm payment',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> failPayment(String id, {String? failureReason}) async {
+    try {
+      final response = await _dio.patch('/payments/$id/fail', queryParameters: {
+        if (failureReason != null) 'failure_reason': failureReason,
+      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Payment marked as failed',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to mark payment as failed',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> refundPayment(String id, {String? refundReason}) async {
+    try {
+      final response = await _dio.patch('/payments/$id/refund', queryParameters: {
+        if (refundReason != null) 'refund_reason': refundReason,
+      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Payment refunded',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to refund payment',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<void>> createServiceProvider({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _dio.post('/service-providers/', data: data);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return ApiResponse.success(
+          message: 'Service provider created successfully',
+          data: null,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to create service provider',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  Future<ApiResponse<Map<String, dynamic>>> setWalletPin({
+    required String pin,
+  }) async {
+    try {
+      final response = await _dio.patch('/users/me', data: {
+        'wallet_pin': pin,
+      });
+      if (response.statusCode == 200) {
+        final data = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Wallet PIN set successfully',
+          data: data,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to set wallet PIN',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
   /// Create a new service request
   Future<ApiResponse<ServiceRequest>> createServiceRequest({
     required String serviceType,
@@ -272,39 +1637,75 @@ class ApiService {
     }
   }
 
+  /// Create service request per v1 docs
+  Future<ApiResponse<Map<String, dynamic>>> createServiceRequestV1({
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _dio.post('/service-requests/', data: data);
+      if (response.statusCode == 201) {
+        final body = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Service request created successfully',
+          data: body,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to create service request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
   /// Get user's service request history
   Future<ApiResponse<List<ServiceRequest>>> getServiceHistory({
     int page = 1,
     int limit = 20,
     String? status,
   }) async {
+    // Deprecated in favor of getMyServiceRequests; keep for backward compatibility
+    return getMyServiceRequests(status: status, limit: limit, offset: (page - 1) * limit);
+  }
+
+  /// New: Get current user's service requests per docs
+  Future<ApiResponse<List<ServiceRequest>>> getMyServiceRequests({
+    String? status,
+    int? limit,
+    int? offset,
+  }) async {
     try {
       final queryParams = <String, dynamic>{
-        'page': page,
-        'limit': limit,
         if (status != null) 'status': status,
+        if (limit != null) 'limit': limit,
+        if (offset != null) 'offset': offset,
       };
-
-      final response =
-          await _dio.get('/requests/history', queryParameters: queryParams);
-
+      final response = await _dio.get('/service-requests/my-requests', queryParameters: queryParams);
       if (response.statusCode == 200) {
-        final List<dynamic> requestsJson = response.data['data'];
-        final requests =
-            requestsJson.map((json) => ServiceRequest.fromJson(json)).toList();
-
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items
+            .map((e) => _mapBackendServiceRequest(e as Map<String, dynamic>))
+            .toList();
         return ApiResponse.success(
-          message: response.data['message'] ??
-              'Service history retrieved successfully',
-          data: requests,
-          statusCode: response.statusCode,
-        );
-      } else {
-        return ApiResponse.error(
-          message: response.data['message'] ?? 'Failed to load service history',
+          message: 'My service requests retrieved successfully',
+          data: list,
           statusCode: response.statusCode,
         );
       }
+      return ApiResponse.error(
+        message: 'Failed to load my service requests',
+        statusCode: response.statusCode,
+      );
     } on DioException catch (e) {
       return _handleDioError(e);
     } catch (e) {
@@ -314,16 +1715,323 @@ class ApiService {
     }
   }
 
+  /// Provider: Get requests assigned to me
+  Future<ApiResponse<List<ServiceRequest>>> getAssignedToMeRequests({
+    String? status,
+    int? limit,
+  }) async {
+    try {
+      final response = await _dio.get('/service-requests/assigned-to-me', queryParameters: {
+        if (status != null) 'status': status,
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items
+            .map((e) => _mapBackendServiceRequest(e as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Assigned requests retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load assigned requests',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get pending requests
+  Future<ApiResponse<List<ServiceRequest>>> getPendingRequests({
+    String? serviceTypeId,
+    int? limit,
+  }) async {
+    try {
+      final response = await _dio.get('/service-requests/pending', queryParameters: {
+        if (serviceTypeId != null) 'service_type_id': serviceTypeId,
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items
+            .map((e) => _mapBackendServiceRequest(e as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Pending requests retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load pending requests',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get urgent requests
+  Future<ApiResponse<List<ServiceRequest>>> getUrgentRequests({int? limit}) async {
+    try {
+      final response = await _dio.get('/service-requests/urgent', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is List
+            ? (response.data as List<dynamic>)
+            : (response.data is Map<String, dynamic>
+                ? ((response.data as Map<String, dynamic>)['data'] ?? []) as List<dynamic>
+                : <dynamic>[]);
+        final list = items
+            .map((e) => _mapBackendServiceRequest(e as Map<String, dynamic>))
+            .toList();
+        return ApiResponse.success(
+          message: 'Urgent requests retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load urgent requests',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get service request by ID
+  Future<ApiResponse<ServiceRequest>> getServiceRequestById(String id) async {
+    try {
+      final response = await _dio.get('/service-requests/$id');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final req = _mapBackendServiceRequest(body);
+        return ApiResponse.success(
+          message: 'Service request retrieved successfully',
+          data: req,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load service request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get service request by request number
+  Future<ApiResponse<ServiceRequest>> getServiceRequestByNumber(String requestNumber) async {
+    try {
+      final response = await _dio.get('/service-requests/request-number/$requestNumber');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final req = _mapBackendServiceRequest(body);
+        return ApiResponse.success(
+          message: 'Service request retrieved successfully',
+          data: req,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load service request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Assign provider
+  Future<ApiResponse<ServiceRequest>> assignServiceProvider({
+    required String requestId,
+    required String providerId,
+  }) async {
+    try {
+      final response = await _dio.patch('/service-requests/$requestId/assign/$providerId');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final req = _mapBackendServiceRequest(body);
+        return ApiResponse.success(
+          message: 'Provider assigned successfully',
+          data: req,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to assign provider',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Update status
+  Future<ApiResponse<ServiceRequest>> updateRequestStatus({
+    required String requestId,
+    required String status,
+  }) async {
+    try {
+      final response = await _dio.patch('/service-requests/$requestId/status/$status');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final req = _mapBackendServiceRequest(body);
+        return ApiResponse.success(
+          message: 'Status updated',
+          data: req,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to update status',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Cancel request
+  Future<ApiResponse<ServiceRequest>> cancelServiceRequest(String requestId) async {
+    try {
+      final response = await _dio.patch('/service-requests/$requestId/cancel');
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final req = _mapBackendServiceRequest(body);
+        return ApiResponse.success(
+          message: 'Request cancelled',
+          data: req,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to cancel request',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  ServiceRequest _mapBackendServiceRequest(Map<String, dynamic> json) {
+    double _toDouble(dynamic v) {
+      if (v == null) return 0.0;
+      if (v is num) return v.toDouble();
+      return double.tryParse(v.toString()) ?? 0.0;
+    }
+    ServiceRequestStatus _statusFrom(String? s) {
+      switch (s) {
+        case 'pending':
+          return ServiceRequestStatus.pending;
+        case 'assigned':
+          return ServiceRequestStatus.assigned;
+        case 'in_progress':
+          return ServiceRequestStatus.inProgress;
+        case 'completed':
+          return ServiceRequestStatus.completed;
+        case 'cancelled':
+          return ServiceRequestStatus.cancelled;
+        case 'confirmed':
+          return ServiceRequestStatus.confirmed;
+        default:
+          return ServiceRequestStatus.pending;
+      }
+    }
+    final pickup = LocationDetails(
+      address: (json['pickup_address'] ?? '').toString(),
+      latitude: _toDouble(json['pickup_latitude']),
+      longitude: _toDouble(json['pickup_longitude']),
+    );
+    final destAddress = (json['destination_address'] ?? '').toString();
+    final destination = destAddress.isNotEmpty
+        ? LocationDetails(
+            address: destAddress,
+            latitude: _toDouble(json['destination_latitude']),
+            longitude: _toDouble(json['destination_longitude']),
+          )
+        : null;
+    return ServiceRequest(
+      id: (json['id'] ?? '').toString(),
+      serviceType: (json['service_type_id'] ?? '').toString(),
+      status: _statusFrom(json['status']?.toString()),
+      customerId: (json['profile_id'] ?? '').toString(),
+      assignedProvider: null,
+      pickupLocation: pickup,
+      destinationLocation: destination,
+      serviceDetails: {
+        'request_number': json['request_number'],
+        'distance_km': json['distance_km'],
+        'special_instructions': json['special_instructions'],
+      },
+      estimatedCost: json.containsKey('estimated_price') ? _toDouble(json['estimated_price']) : null,
+      finalCost: json.containsKey('final_price') ? _toDouble(json['final_price']) : null,
+      currency: 'GHS',
+      createdAt: DateTime.tryParse((json['created_at'] ?? '').toString()) ?? DateTime.now(),
+      updatedAt: DateTime.tryParse((json['updated_at'] ?? '').toString()) ?? DateTime.now(),
+      estimatedCompletionTime: null,
+      completedAt: DateTime.tryParse((json['completed_at'] ?? '').toString()),
+      notes: (json['special_instructions'] ?? '') as String?,
+      urgencyLevel: 'low',
+      paymentStatus: PaymentStatus.pending,
+      imageUrls: null,
+    );
+  }
+
   /// Update service request status
   Future<ApiResponse<ServiceRequest>> updateServiceRequest({
     required String requestId,
     required Map<String, dynamic> updateData,
   }) async {
     try {
-      final response = await _dio.put('/requests/$requestId', data: updateData);
+      final response = await _dio.patch('/service-requests/$requestId', data: updateData);
 
       if (response.statusCode == 200) {
-        final serviceRequest = ServiceRequest.fromJson(response.data['data']);
+        final Map<String, dynamic> body = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        final serviceRequest = _mapBackendServiceRequest(body);
         return ApiResponse.success(
           message: response.data['message'] ??
               'Service request updated successfully',
@@ -343,6 +2051,282 @@ class ApiService {
       return ApiResponse.error(
         message: 'An unexpected error occurred: ${e.toString()}',
       );
+    }
+  }
+
+  /// List notifications for the current user
+  Future<ApiResponse<List<Map<String, dynamic>>>> getNotifications({int? limit}) async {
+    try {
+      final response = await _dio.get('/notifications/', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Notifications retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load notifications',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Mark a single notification as read
+  Future<ApiResponse<Map<String, dynamic>>> markNotificationRead(String id) async {
+    try {
+      final response = await _dio.patch('/notifications/$id', data: {'is_read': true});
+      if (response.statusCode == 200) {
+        final data = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Notification marked as read',
+          data: data,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to mark notification as read',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Delete a notification
+  Future<ApiResponse<void>> deleteNotification(String id) async {
+    try {
+      final response = await _dio.delete('/notifications/$id');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return ApiResponse.success(
+          message: 'Notification deleted',
+          data: null,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to delete notification',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get messages for a request conversation (path form)
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMessagesForRequest({
+    required String requestId,
+    int? limit,
+  }) async {
+    try {
+      final response = await _dio.get('/messages/request/$requestId', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Messages retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load messages',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get conversation messages with another profile
+  Future<ApiResponse<List<Map<String, dynamic>>>> getConversationMessages({
+    required String otherProfileId,
+    int? limit,
+  }) async {
+    try {
+      final response = await _dio.get('/messages/conversation/$otherProfileId', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Conversation messages retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load conversation messages',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Send a message (supports text only for now)
+  Future<ApiResponse<Map<String, dynamic>>> sendMessage({
+    required String requestId,
+    required String messageContent,
+    String messageType = 'text',
+    String? attachmentUrl,
+    String? attachmentType,
+  }) async {
+    try {
+      final payload = {
+        'request_id': requestId,
+        'message_type': messageType,
+        'message_content': messageContent,
+        if (attachmentUrl != null) 'attachment_url': attachmentUrl,
+        if (attachmentType != null) 'attachment_type': attachmentType,
+      };
+      final response = await _dio.post('/messages/', data: payload);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        final data = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Message sent',
+          data: data,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to send message',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get recent conversations for current user
+  Future<ApiResponse<List<Map<String, dynamic>>>> getConversations({int? limit}) async {
+    try {
+      final response = await _dio.get('/messages/conversations', queryParameters: {
+        if (limit != null) 'limit': limit,
+      });
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Conversations retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load conversations',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Mark single message as read
+  Future<ApiResponse<Map<String, dynamic>>> markMessageRead(String messageId) async {
+    try {
+      final response = await _dio.patch('/messages/$messageId/read');
+      if (response.statusCode == 200) {
+        final data = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as Map<String, dynamic>
+            : <String, dynamic>{};
+        return ApiResponse.success(
+          message: 'Message marked as read',
+          data: data,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to mark message as read',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Mark conversation with another profile as read
+  Future<ApiResponse<void>> markConversationRead(String otherProfileId) async {
+    try {
+      final response = await _dio.patch('/messages/conversation/$otherProfileId/read');
+      if (response.statusCode == 200) {
+        return ApiResponse.success(
+          message: 'Conversation marked as read',
+          data: null,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to mark conversation as read',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
+    }
+  }
+
+  /// Get message threads for inbox (if available on backend)
+  Future<ApiResponse<List<Map<String, dynamic>>>> getMessageThreads() async {
+    try {
+      final response = await _dio.get('/messages/threads');
+      if (response.statusCode == 200) {
+        final List<dynamic> items = response.data is Map<String, dynamic>
+            ? (response.data['data'] ?? response.data) as List<dynamic>
+            : (response.data as List<dynamic>);
+        final list = items.map((e) => (e as Map<String, dynamic>)).toList();
+        return ApiResponse.success(
+          message: 'Threads retrieved successfully',
+          data: list,
+          statusCode: response.statusCode,
+        );
+      }
+      return ApiResponse.error(
+        message: 'Failed to load threads',
+        statusCode: response.statusCode,
+      );
+    } on DioException catch (e) {
+      return _handleDioError(e);
+    } catch (e) {
+      return ApiResponse.error(message: 'An unexpected error occurred: ${e.toString()}');
     }
   }
 
