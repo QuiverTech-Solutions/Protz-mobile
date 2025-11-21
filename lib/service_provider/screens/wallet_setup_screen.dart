@@ -1,21 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/app_export.dart';
 import '../widgets/sp_primary_button.dart';
 import '../widgets/sp_success_toast.dart';
+import '../../shared/providers/api_service_provider.dart';
+import '../../shared/providers/provider_onboarding_provider.dart';
+import '../../auth/services/new_auth_service.dart';
+import '../../auth/models/register_request.dart';
+import '../../auth/widgets/phone_verification_dialog.dart';
+import '../../shared/utils/pages.dart';
 
-class ProtzWalletSetupScreen extends StatefulWidget {
+class ProtzWalletSetupScreen extends ConsumerStatefulWidget {
   const ProtzWalletSetupScreen({super.key});
 
   @override
-  State<ProtzWalletSetupScreen> createState() => _ProtzWalletSetupScreenState();
+  ConsumerState<ProtzWalletSetupScreen> createState() => _ProtzWalletSetupScreenState();
 }
 
-class _ProtzWalletSetupScreenState extends State<ProtzWalletSetupScreen> {
+class _ProtzWalletSetupScreenState extends ConsumerState<ProtzWalletSetupScreen> {
   final _pinControllers = List.generate(4, (_) => TextEditingController());
   final _focusNodes = List.generate(4, (_) => FocusNode());
   bool _isConfirmStep = false;
   String? _firstPin;
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -46,7 +54,7 @@ class _ProtzWalletSetupScreenState extends State<ProtzWalletSetupScreen> {
     }
   }
 
-  void _onContinue(BuildContext context) {
+  Future<void> _onContinue(BuildContext context) async {
     final pin = _pin();
     if (pin.length != 4 || pin.contains(RegExp(r'\D'))) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -70,16 +78,136 @@ class _ProtzWalletSetupScreenState extends State<ProtzWalletSetupScreen> {
         _focusNodes.first.requestFocus();
         return;
       }
-      // Show success toast, then navigate away
-      showSPSuccessToast(
-        context,
-        title: 'Success!',
-        subtitle: 'You have successfully set your wallet PIN.',
-        caption: 'You will now be redirected',
-        durationMs: 1800,
-      ).then((_) {
-        Navigator.of(context).maybePop();
-      });
+      setState(() => _submitting = true);
+      final onboarding = ref.read(providerOnboardingProvider);
+      final auth = AuthService();
+      final firstName = onboarding.firstName ?? '';
+      final lastName = onboarding.lastName ?? '';
+      final phone = _ensureValidGhanaPhone(onboarding.phoneNumber ?? '');
+      final email = onboarding.email ?? '';
+      final password = onboarding.password ?? '';
+      final serviceCode = onboarding.serviceTypeCode ?? 'TOWING';
+      final api = ref.read(apiServiceProvider);
+      String? serviceTypeId;
+      try {
+        final typesRes = await api.getActiveServiceTypes();
+        if (typesRes.success && typesRes.data != null) {
+          final list = typesRes.data!;
+          if (list.isNotEmpty) {
+            final match = list.firstWhere(
+              (t) => t.code.toUpperCase() == serviceCode,
+              orElse: () => list.first,
+            );
+            serviceTypeId = match.id;
+          }
+        }
+        if (serviceTypeId == null || serviceTypeId.isEmpty) {
+          final byCode = await api.getServiceTypeByCode(serviceCode);
+          if (byCode.success && byCode.data != null) {
+            serviceTypeId = byCode.data!.id;
+          }
+        }
+      } catch (_) {
+        // Ignore and proceed without service type id
+      }
+
+      final request = RegisterRequest(
+        firstName: firstName,
+        lastName: lastName,
+        userType: 'service_provider',
+        phoneNumber: phone,
+        email: email,
+        password: password,
+        gender: 'male',
+        profilePhotoUrl: 'https://cdn.potzapp.com/profiles/kwameadu.jpg',
+        middleName: 'Kofi',
+        dateOfBirth: '1990-05-14',
+        alternatePhone: '+233208765432',
+        emergencyContactName: 'Ama Serwaa',
+        emergencyContactPhone: '+233278999888',
+        primaryAddress: 'House 22, East Legon',
+        city: 'Accra',
+        state: 'Greater Accra',
+      );
+
+      final serviceProvider = {
+        'service_type': 'e1585752-fa44-4232-bcdc-528f10b45000',
+        'business_name': (onboarding.businessName?.isNotEmpty ?? false) ? onboarding.businessName : (firstName + ' ' + lastName).trim(),
+        'license_type': onboarding.licenseType ?? 'ghana_card',
+        'license_number': onboarding.licenseNumber ?? '',
+        'vehicle_registration': onboarding.vehicleRegistration ?? '',
+        'insurance_policy': onboarding.insurancePolicy ?? '',
+        'verification_status': 'pending',
+        'is_active': true,
+        'is_available': true,
+        'is_online': false,
+        'city': onboarding.city ?? 'Accra',
+        'state': onboarding.state ?? 'Greater Accra',
+        'current_latitude': 5.603716,
+        'current_longitude': -0.186964,
+        'rating': 5,
+        'total_completed_jobs': 12,
+      };
+
+      try {
+        await auth.register(request, serviceProvider: serviceProvider, usePasswordHash: true);
+        await auth.sendOtp(phoneNumber: phone);
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => PhoneVerificationDialog(
+            phoneNumber: phone,
+            onVerificationSuccess: () async {
+              final api = ref.read(apiServiceProvider);
+              final pinRes = await api.setWalletPin(pin: pin);
+              setState(() => _submitting = false);
+              if (!pinRes.success) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(pinRes.message.isNotEmpty ? pinRes.message : 'Failed to set wallet PIN')),
+                );
+                return;
+              }
+              try {
+                final prof = await api.getProfileMe();
+                if (prof.success && prof.data != null) {
+                  final profileId = (prof.data!['id'] ?? '').toString();
+                  if (profileId.isNotEmpty) {
+                    final localNine = _localNineFromPhone(phone);
+                    await api.createWallet(data: {
+                      'wallet_name': 'Protz Wallet',
+                      'profile_id': profileId,
+                      'wallet_provider': 'Paystack',
+                      'wallet_type': 'mobile_money',
+                      'wallet_account_number': localNine,
+                      'wallet_bank_name': '',
+                      'wallet_recipient_code': '',
+                    });
+                  }
+                }
+              } catch (_) {}
+              showSPSuccessToast(
+                context,
+                title: 'Success!',
+                subtitle: 'You have successfully set your wallet PIN.',
+                caption: 'You will now be redirected',
+                durationMs: 1800,
+              ).then((_) {
+                ref.read(providerOnboardingProvider.notifier).reset();
+                GoRouterHelper.go(context, AppRoutes.providerHome);
+              });
+            },
+            onCancel: () {
+              setState(() => _submitting = false);
+            },
+          ),
+        );
+      } catch (e) {
+        setState(() => _submitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registration failed')),
+        );
+      }
     }
   }
 
@@ -113,7 +241,7 @@ class _ProtzWalletSetupScreenState extends State<ProtzWalletSetupScreen> {
                                   _clearPin();
                                   _focusNodes.first.requestFocus();
                                 } else {
-                                  Navigator.of(context).maybePop();
+                                  Navigator.of(context).pop();
                                 }
                               },
                             ),
@@ -283,8 +411,8 @@ class _ProtzWalletSetupScreenState extends State<ProtzWalletSetupScreen> {
 
                         // Continue button
                         SPPrimaryButton(
-                          title: _isConfirmStep ? 'Confirm' : 'Continue',
-                          onPressed: () => _onContinue(context),
+                          title: _submitting ? 'Submitting…' : (_isConfirmStep ? 'Confirm' : 'Continue'),
+                          onPressed: _submitting ? null : () => _onContinue(context),
                         ),
                       ],
                     ),
@@ -297,6 +425,47 @@ class _ProtzWalletSetupScreenState extends State<ProtzWalletSetupScreen> {
       },
     );
   }
+}
+
+String _normalizeGhanaPhone(String input) {
+  final digits = input.replaceAll(RegExp(r'\D'), '');
+  if (digits.isEmpty) return '';
+  String localNine;
+  if (digits.startsWith('233') && digits.length >= 12) {
+    localNine = digits.substring(digits.length - 9);
+  } else if (digits.length >= 10 && digits.startsWith('0')) {
+    localNine = digits.substring(digits.length - 9);
+  } else if (digits.length == 9) {
+    localNine = digits;
+  } else {
+    return '';
+  }
+  return '+233$localNine';
+}
+
+bool _isValidGhanaPhone(String phone) {
+  final reg = RegExp(r'^\+233[0-9]{9} ?$');
+  return RegExp(r'^\+233[0-9]{9}$').hasMatch(phone);
+}
+
+String _ensureValidGhanaPhone(String input, [String? alt]) {
+  final primary = _normalizeGhanaPhone(input);
+  if (_isValidGhanaPhone(primary)) return primary;
+  final altNorm = alt == null ? '' : _normalizeGhanaPhone(alt);
+  if (alt != null && _isValidGhanaPhone(altNorm)) return altNorm;
+  return '+233544123456';
+}
+
+String _localNineFromPhone(String e164) {
+  final digits = e164.replaceAll(RegExp(r'\D'), '');
+  if (digits.length >= 12 && digits.startsWith('233')) {
+    return digits.substring(digits.length - 9);
+  }
+  if (digits.length >= 10 && digits.startsWith('0')) {
+    return digits.substring(digits.length - 9);
+  }
+  if (digits.length == 9) return digits;
+  return '000000000';
 }
 
 class _PinBox extends StatelessWidget {
