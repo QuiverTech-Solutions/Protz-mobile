@@ -6,7 +6,6 @@ import '../core/app_export.dart';
 import '../widgets/service_select_card.dart';
 import '../widgets/sp_upload_field.dart';
 import '../widgets/sp_primary_button.dart';
-import '../../shared/providers/api_service_provider.dart';
 import '../../shared/providers/provider_onboarding_provider.dart';
 
 class DocumentVerificationScreen extends ConsumerStatefulWidget {
