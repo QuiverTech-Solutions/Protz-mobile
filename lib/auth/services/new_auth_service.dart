@@ -7,10 +7,7 @@ import '../../shared/services/dio_client.dart';
 import '../../shared/services/token_storage.dart';
 import '../../shared/exceptions/auth_exceptions.dart';
 import '../../shared/utils/error_handler.dart';
-import '../models/auth_response.dart';
 import '../models/register_request.dart';
-import '../models/profile_with_user_request.dart';
-import '../models/otp_request.dart';
 import '../models/password_reset_request.dart';
 
 class AuthService {
@@ -179,16 +176,135 @@ class AuthService {
     }
   }
 
-  Future<User> register(RegisterRequest registerRequest) async {
+  /// Service Provider login
+  /// POST /service-providers/login
+  Future<User> loginServiceProvider({
+    required String username,
+    required String password,
+  }) async {
+    try {
+      developer.log('AuthService: Starting provider login for username: $username');
+      developer.log('AuthService: Provider login endpoint: /service-providers/login');
+
+      final formData = FormData.fromMap({
+        'username': username,
+        'password': password,
+        'grant_type': 'password',
+      });
+
+      final response = await _dioClient.post<Map<String, dynamic>>(
+        '/service-providers/login',
+        data: formData,
+        options: Options(
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        ),
+      );
+
+      if (response.data == null) {
+        throw const ServerException('Invalid response from server');
+      }
+
+      if (response.data!.containsKey('access_token')) {
+        final accessToken = response.data!['access_token'] as String?;
+        final tokenType = (response.data!['token_type'] as String?) ?? 'Bearer';
+        final refreshToken = response.data!['refresh_token'] as String?;
+        final expiresIn = response.data!['expires_in'] is int
+            ? response.data!['expires_in'] as int
+            : int.tryParse('${response.data!['expires_in']}');
+        if (accessToken == null || accessToken.isEmpty) {
+          throw const ServerException('Missing access token');
+        }
+        await _tokenStorage.saveToken(
+          accessToken: accessToken,
+          tokenType: tokenType,
+          refreshToken: refreshToken,
+          expiresIn: expiresIn,
+        );
+
+        try {
+          final user = await getMe();
+          return user;
+        } catch (e) {
+          final fallbackUser = User(
+            id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+            name: 'Provider',
+            email: username.contains('@') ? username : 'provider@example.com',
+            phoneNumber: !username.contains('@') ? username : '+1234567890',
+            firstName: 'Provider',
+            lastName: '',
+            role: UserRole.serviceProvider,
+            isVerified: true,
+            isAvailable: true,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+          _currentUser = fallbackUser;
+          await _tokenStorage.saveUser(fallbackUser);
+          _userController.add(_currentUser);
+          return fallbackUser;
+        }
+      } else {
+        final mapped = _mapProfileWithContextToUserJson(response.data!);
+        final user = User.fromJson(mapped);
+        _currentUser = user;
+        await _tokenStorage.saveUser(user);
+        _userController.add(_currentUser);
+        return user;
+      }
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 401) {
+        throw const AuthException('Invalid username or password');
+      }
+      throw ErrorHandler.handleDioError(e);
+    } catch (e, stackTrace) {
+      developer.log('AuthService: Unexpected error during provider login: $e');
+      developer.log('AuthService: Provider login error stack trace: $stackTrace');
+      throw ErrorHandler.handleGeneralError(e);
+    }
+  }
+
+  /// Check if a phone number belongs to a registered user before sending OTP
+  Future<bool> checkUserExistsByPhone({
+    required String phoneNumber,
+  }) async {
+    try {
+      final payload = {
+        'phone_number': phoneNumber,
+        'validate_only': true,
+      };
+      final response = await _dioClient.post<Map<String, dynamic>>(
+        '/users/otp/send/?validate_only=true',
+        data: payload,
+      );
+      return (response.statusCode ?? 200) >= 200 && (response.statusCode ?? 200) < 300;
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404 || e.response?.statusCode == 422) {
+        return false;
+      }
+      throw ErrorHandler.handleDioError(e);
+    } catch (e) {
+      throw ErrorHandler.handleGeneralError(e);
+    }
+  }
+
+  Future<User> register(RegisterRequest registerRequest, {Map<String, dynamic>? serviceProvider, bool usePasswordHash = false}) async {
     try {
       developer.log('AuthService: Starting registration process');
       developer.log('AuthService: Registration endpoint: /users/register');
       developer.log('AuthService: User type: ${registerRequest.userType}');
       developer.log('AuthService: Email: ${registerRequest.email}');
       developer.log('AuthService: Phone: ${registerRequest.phoneNumber}');
+      final payload = registerRequest.toJson();
+      if (usePasswordHash) {
+        payload['password_hash'] = registerRequest.password;
+        payload.remove('password');
+      }
+      if (serviceProvider != null) {
+        payload['service_provider'] = serviceProvider;
+      }
       final response = await _dioClient.post<Map<String, dynamic>>(
         '/users/register',
-        data: registerRequest.toJson(),
+        data: payload,
         options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
