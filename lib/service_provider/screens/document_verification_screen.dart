@@ -1,25 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../shared/utils/pages.dart';
 import '../core/app_export.dart';
 import '../widgets/service_select_card.dart';
 import '../widgets/sp_upload_field.dart';
 import '../widgets/sp_primary_button.dart';
+import '../../shared/providers/api_service_provider.dart';
+import '../../shared/providers/provider_onboarding_provider.dart';
 
-class DocumentVerificationScreen extends StatefulWidget {
+class DocumentVerificationScreen extends ConsumerStatefulWidget {
   const DocumentVerificationScreen({super.key});
 
   @override
-  State<DocumentVerificationScreen> createState() => _DocumentVerificationScreenState();
+  ConsumerState<DocumentVerificationScreen> createState() => _DocumentVerificationScreenState();
 }
 
-class _DocumentVerificationScreenState extends State<DocumentVerificationScreen> {
+class _DocumentVerificationScreenState extends ConsumerState<DocumentVerificationScreen> {
   final ImagePicker _picker = ImagePicker();
   String? _selectedService; // 'towing' or 'water'
   int _licenseCount = 0;
   int _registrationCount = 0;
   int _photosCount = 0;
   int _insuranceCount = 0; // optional
+  bool _submitting = false;
+  final TextEditingController _businessNameController = TextEditingController();
+  final TextEditingController _licenseNumberController = TextEditingController();
+  final TextEditingController _vehicleRegistrationController = TextEditingController();
+  final TextEditingController _insurancePolicyController = TextEditingController();
 
   Future<void> _pickImages(String key) async {
     final images = await _picker.pickMultiImage();
@@ -42,7 +50,7 @@ class _DocumentVerificationScreenState extends State<DocumentVerificationScreen>
     });
   }
 
-  void _onNext(BuildContext context) {
+  Future<void> _onNext(BuildContext context) async {
     final hasService = _selectedService != null;
     final hasRequiredUploads = _licenseCount > 0 && _registrationCount > 0 && _photosCount > 0;
     if (!hasService || !hasRequiredUploads) {
@@ -51,7 +59,22 @@ class _DocumentVerificationScreenState extends State<DocumentVerificationScreen>
       );
       return;
     }
-    GoRouterHelper.go(context, AppRoutes.providerHome);
+    final code = _selectedService == 'towing' ? 'TOWING' : 'WATER';
+    ref.read(providerOnboardingProvider.notifier).setServiceSelection(code);
+    ref.read(providerOnboardingProvider.notifier).setBusinessName(_businessNameController.text.trim());
+    ref.read(providerOnboardingProvider.notifier).setUploads(
+          licenseCount: _licenseCount,
+          registrationCount: _registrationCount,
+          photosCount: _photosCount,
+          insuranceCount: _insuranceCount,
+        );
+    ref.read(providerOnboardingProvider.notifier).setDocumentFields(
+      licenseType: 'ghana_card',
+      licenseNumber: _licenseNumberController.text.trim(),
+      vehicleRegistration: _vehicleRegistrationController.text.trim(),
+      insurancePolicy: _insurancePolicyController.text.trim(),
+    );
+    GoRouterHelper.go(context, AppRoutes.providerWalletSetup);
   }
 
   @override
@@ -149,25 +172,65 @@ class _DocumentVerificationScreenState extends State<DocumentVerificationScreen>
                               onTap: () => _pickImages('registration'),
                             ),
                             SizedBox(height: 20.h),
-                            SPUploadField(
-                              label: '*Photos of Vehicle',
-                              count: _photosCount,
-                              onTap: () => _pickImages('photos'),
-                            ),
-                            SizedBox(height: 20.h),
-                            SPUploadField(
-                              label: 'Insurance Document (Optional)',
-                              count: _insuranceCount,
-                              onTap: () => _pickImages('insurance'),
-                            ),
+                          SPUploadField(
+                            label: '*Photos of Vehicle',
+                            count: _photosCount,
+                            onTap: () => _pickImages('photos'),
+                          ),
+                          SizedBox(height: 20.h),
+                          SPUploadField(
+                            label: 'Insurance Document (Optional)',
+                            count: _insuranceCount,
+                            onTap: () => _pickImages('insurance'),
+                          ),
 
-                            SizedBox(height: 24.h),
+                          SizedBox(height: 24.h),
 
-                            // Next button
-                            SPPrimaryButton(
-                              title: 'Next',
-                              onPressed: () => _onNext(context),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Business Name',
+                              style: SPTextStyleHelper.instance.label10RegularPoppins,
                             ),
+                          ),
+                          SizedBox(height: 6.h),
+                          _entryField(controller: _businessNameController, hint: 'Company or personal name'),
+                          SizedBox(height: 16.h),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '*License Number',
+                              style: SPTextStyleHelper.instance.label10RegularPoppins,
+                            ),
+                          ),
+                          SizedBox(height: 6.h),
+                          _entryField(controller: _licenseNumberController, hint: 'Enter license number'),
+                          SizedBox(height: 16.h),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '*Vehicle Registration',
+                              style: SPTextStyleHelper.instance.label10RegularPoppins,
+                            ),
+                          ),
+                          SizedBox(height: 6.h),
+                          _entryField(controller: _vehicleRegistrationController, hint: 'Enter vehicle registration'),
+                          SizedBox(height: 16.h),
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              'Insurance Policy',
+                              style: SPTextStyleHelper.instance.label10RegularPoppins,
+                            ),
+                          ),
+                          SizedBox(height: 6.h),
+                          _entryField(controller: _insurancePolicyController, hint: 'Enter insurance policy (optional)'),
+
+                          // Next button
+                          SPPrimaryButton(
+                            title: _submitting ? 'Submitting…' : 'Next',
+                            onPressed: _submitting ? null : () => _onNext(context),
+                          ),
                           ],
                         ),
                       ),
@@ -217,6 +280,26 @@ class _DocumentVerificationScreenState extends State<DocumentVerificationScreen>
       },
     );
   }
+}
+
+Widget _entryField({required TextEditingController controller, required String hint}) {
+  return Container(
+    height: 48.h,
+    decoration: BoxDecoration(
+      color: appTheme.white_A700,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: appTheme.blue_gray_400.withOpacity(0.5)),
+    ),
+    child: TextField(
+      controller: controller,
+      style: SPTextStyleHelper.instance.body12RegularPoppins,
+      decoration: InputDecoration(
+        hintText: hint,
+        border: InputBorder.none,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 10.h),
+      ),
+    ),
+  );
 }
 
 // Moved inner widgets to lib/service_provider/widgets/ and wired interactions
