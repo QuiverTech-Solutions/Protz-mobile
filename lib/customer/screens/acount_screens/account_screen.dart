@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_export.dart';
 import '../../../shared/widgets/custom_bottom_nav_bar.dart';
 import '../../../shared/utils/pages.dart';
+import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/services/token_storage.dart';
 
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
@@ -189,28 +192,45 @@ class _AccountScreenState extends State<AccountScreen> {
           ),
           SizedBox(width: 12.h),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  'John Williams',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'johnwilliams69@gmail.com',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 12,
-                    color: Color(0xFF808080),
-                  ),
-                ),
-              ],
-            ),
+            child: Consumer(builder: (context, ref, _) {
+              final api = ref.read(apiServiceProvider);
+              return FutureBuilder(
+                future: api.getProfileMe(),
+                builder: (context, snapshot) {
+                  final name = snapshot.hasData && snapshot.data!.success && snapshot.data!.data != null
+                      ? ([snapshot.data!.data!['first_name'], snapshot.data!.data!['last_name']]
+                          .where((v) => (v ?? '').toString().isNotEmpty)
+                          .map((v) => v.toString())
+                          .join(' '))
+                      : 'Your Name';
+                  final email = snapshot.hasData && snapshot.data!.success && snapshot.data!.data != null
+                      ? (snapshot.data!.data!['email'] ?? '').toString()
+                      : '';
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          color: Color(0xFF808080),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            }),
           ),
           IconButton(
             icon: const Icon(
@@ -218,7 +238,7 @@ class _AccountScreenState extends State<AccountScreen> {
               color: Color(0xFF086788),
             ),
             onPressed: () {
-              // TODO: Logout
+              TokenStorage.instance.clearAll();
               context.pushReplacementNamed(AppRouteNames.login);
             },
           ),

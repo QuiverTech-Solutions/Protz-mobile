@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_export.dart';
+import '../../../shared/providers/api_service_provider.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -136,98 +138,176 @@ class _WalletScreenState extends State<WalletScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'John Williams',
-                    style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF322F35),
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.h, vertical: 4.h),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF086788),
-                          borderRadius: BorderRadius.circular(4.h),
-                        ),
-                        child: Text(
-                          'Protz Wallet',
+          Consumer(builder: (context, ref, _) {
+            final api = ref.read(apiServiceProvider);
+            return FutureBuilder(
+              future: api.getMyMainWallet(),
+              builder: (context, snapshot) {
+                final has = snapshot.hasData && snapshot.data!.success && snapshot.data!.data != null;
+                final data = has ? snapshot.data!.data! : <String, dynamic>{};
+                final walletName = (data['wallet_name'] ?? 'Protz Wallet').toString();
+                final provider = (data['wallet_provider'] ?? '').toString();
+                final accountNumber = (data['wallet_account_number'] ?? '').toString();
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          walletName,
                           style: TextStyle(
                             fontFamily: 'Poppins',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF322F35),
                           ),
                         ),
-                      ),
-                    ],
+                        SizedBox(height: 4.h),
+                        Row(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8.h, vertical: 4.h),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF086788),
+                                borderRadius: BorderRadius.circular(4.h),
+                              ),
+                              child: Text(
+                                provider.isNotEmpty ? provider : 'Protz Wallet',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        if (accountNumber.isNotEmpty)
+                          Text(
+                            accountNumber,
+                            style: const TextStyle(fontSize: 12, color: Color(0xFF808080)),
+                          ),
+                        const Icon(
+                          Icons.edit_outlined,
+                          color: Color(0xFF086788),
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            );
+          }),
+          SizedBox(height: 20.h),
+          // Balance not provided by wallet endpoints; omit amount display
+          SizedBox(height: 20.h),
+          Consumer(builder: (context, ref, _) {
+            return Row(
+              children: [
+                Expanded(
+                  child: _buildActionButton(
+                    'Withdraw funds',
+                    Colors.white,
+                    const Color(0xFF086788),
+                    const Color(0xFF086788),
+                    () async {
+                      final api = ref.read(apiServiceProvider);
+                      final main = await api.getMyMainWallet();
+                      if (!main.success || main.data == null) return;
+                      final id = (main.data!['id'] ?? '').toString();
+                      if (id.isEmpty) return;
+                      final res = await api.debitWallet(walletId: id, amount: 10.0, description: 'User withdrawal');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(res.success ? 'Debited 10.0' : 'Withdraw failed: ${res.message}')),
+                      );
+                    },
                   ),
-                ],
-              ),
-              Icon(
-                Icons.edit_outlined,
-                color: const Color(0xFF086788),
-                size: 20,
-              ),
-            ],
-          ),
-          SizedBox(height: 20.h),
-          Text(
-            'GHS 800.50',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF322F35),
-            ),
-          ),
-          Text(
-            'Available Balance',
-            style: TextStyle(
-              fontFamily: 'Poppins',
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: const Color(0xFF808080),
-            ),
-          ),
-          SizedBox(height: 20.h),
-          Row(
-            children: [
-              Expanded(
-                child: _buildActionButton(
-                  'Withdraw funds',
-                  Colors.white,
-                  const Color(0xFF086788),
-                  const Color(0xFF086788),
-                  () {
-                    // Handle withdraw
-                  },
                 ),
-              ),
-              SizedBox(width: 12.h),
-              Expanded(
-                child: _buildActionButton(
-                  'Add funds',
-                  const Color(0xFF086788),
-                  Colors.white,
-                  const Color(0xFF086788),
-                  () {
-                    // Handle add funds
-                  },
+                SizedBox(width: 12.h),
+                Expanded(
+                  child: _buildActionButton(
+                    'Add funds',
+                    const Color(0xFF086788),
+                    Colors.white,
+                    const Color(0xFF086788),
+                    () async {
+                      final api = ref.read(apiServiceProvider);
+                      final main = await api.getMyMainWallet();
+                      if (!main.success || main.data == null) return;
+                      final id = (main.data!['id'] ?? '').toString();
+                      if (id.isEmpty) return;
+                      final res = await api.creditWallet(walletId: id, amount: 10.0, description: 'Add funds');
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(res.success ? 'Credited 10.0' : 'Add funds failed: ${res.message}')),
+                      );
+                    },
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            );
+          }),
+          SizedBox(height: 16.h),
+          Consumer(builder: (context, ref, _) {
+            final api = ref.read(apiServiceProvider);
+            return FutureBuilder(
+              future: api.getPayments(limit: 5),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const SizedBox.shrink();
+                }
+                final res = snapshot.data!;
+                if (!res.success || res.data == null || res.data!.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                final items = res.data!;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Recent Payments',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF322F35),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    ...items.map((p) {
+                      final amount = (p['amount'] ?? '').toString();
+                      final status = (p['status'] ?? '').toString();
+                      final method = (p['method'] ?? '').toString();
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: 8.h),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '$method • $status',
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF808080)),
+                              ),
+                            ),
+                            Text(
+                              amount.isNotEmpty ? 'GHS $amount' : '',
+                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                );
+              },
+            );
+          }),
         ],
       ),
     );

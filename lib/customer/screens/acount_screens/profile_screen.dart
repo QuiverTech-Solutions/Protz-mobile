@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/app_export.dart';
 import '../../../auth/widgets/auth_text_field.dart';
 import '../../../shared/widgets/custom_button.dart';
+import '../../../shared/providers/api_service_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -49,7 +51,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       body: Sizer(
         builder: (context, orientation, deviceType) {
-          return SingleChildScrollView(
+          return Consumer(builder: (context, ref, _) {
+            final api = ref.read(apiServiceProvider);
+            return FutureBuilder(
+              future: api.getProfileMe(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final res = snapshot.data!;
+                if (!res.success || res.data == null) {
+                  return Center(child: Text('Failed to load profile: ${res.message}'));
+                }
+                final profile = res.data!;
+                _nameController.text = [profile['first_name'], profile['last_name']]
+                    .where((v) => (v ?? '').toString().isNotEmpty)
+                    .map((v) => v.toString())
+                    .join(' ');
+                _emailController.text = (profile['email'] ?? '').toString();
+                _phoneController.text = (profile['phone_number'] ?? '').toString();
+                _addressController.text = (profile['primary_address'] ?? '').toString();
+
+                return SingleChildScrollView(
             padding: EdgeInsets.symmetric(horizontal: 16.h),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -154,10 +177,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 // Save Changes Button
                 CustomButton(
                   text: 'Save Changes',
-                  onPressed: () {
-                    //TODO: Integrate save functionality
+                  onPressed: () async {
+                    final update = {
+                      'phone_number': _phoneController.text.trim(),
+                      'email': _emailController.text.trim(),
+                      'primary_address': _addressController.text.trim(),
+                    };
+                    final res = await api.patchProfileMe(update);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Profile updated')),
+                      SnackBar(content: Text(res.success ? 'Profile updated' : 'Update failed: ${res.message}')),
                     );
                   },
                   backgroundColor: appTheme.light_blue_900,
@@ -169,7 +197,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 SizedBox(height: 24.h),
               ],
             ),
-          );
+                );
+              },
+            );
+          });
         },
       ),
     );
