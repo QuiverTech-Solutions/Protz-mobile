@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import '../../../shared/widgets/back_icon_button.dart';
 import '../../../shared/widgets/history_icon_button.dart';
 import '../../../shared/utils/pages.dart';
+import '../../../shared/providers/towing_types_provider.dart';
 
 class TowingServicesScreen3 extends StatefulWidget {
   final String? pickupLocation;
   final String? destination;
+  final String? destinationLat;
+  final String? destinationLng;
 
   const TowingServicesScreen3({
     super.key,
     this.pickupLocation,
     this.destination,
+    this.destinationLat,
+    this.destinationLng,
   });
 
   @override
@@ -21,7 +27,8 @@ class TowingServicesScreen3 extends StatefulWidget {
 }
 
 class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
-  String? selectedVehicle;
+  String? selectedTowingTypeId;
+  String? selectedTowingTypeName;
   String? selectedUrgency;
   String? selectedRequirement;
 
@@ -75,15 +82,42 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
                   // Vehicle Type
                   _buildLabel('What kind of vehicle is it?'),
                   const SizedBox(height: 8),
-                  _buildDropdown(
-                    hint: 'Select vehicle type',
-                    value: selectedVehicle,
-                    onChanged: (value) {
-                      setState(() {
-                        selectedVehicle = value;
-                      });
-                    },
-                  ),
+                  Consumer(builder: (context, ref, _) {
+                    final async = ref.watch(towingTypesProvider);
+                    if (async.isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    final items = async.maybeWhen(data: (list) => list, orElse: () => const []);
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          isExpanded: true,
+                          hint: Text(
+                            'Select vehicle type',
+                            style: TextStyle(
+                              color: Colors.grey.shade500,
+                              fontSize: 13,
+                            ),
+                          ),
+                          value: selectedTowingTypeId,
+                          icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade600),
+                          items: items.map((t) => DropdownMenuItem<String>(value: t.id, child: Text(t.name))).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              selectedTowingTypeId = value;
+                              selectedTowingTypeName = items.firstWhere((e) => e.id == value).name;
+                            });
+                          },
+                        ),
+                      ),
+                    );
+                  }),
 
                   const SizedBox(height: 24),
 
@@ -93,6 +127,7 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
                   _buildDropdown(
                     hint: 'Select urgency level',
                     value: selectedUrgency,
+                    options: const ['Emergency', 'High', 'Normal'],
                     onChanged: (value) {
                       setState(() {
                         selectedUrgency = value;
@@ -108,6 +143,7 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
                   _buildDropdown(
                     hint: 'Select special requirement',
                     value: selectedRequirement,
+                    options: const ['Flatbed', 'Wheel lift', 'Tow bar', 'None'],
                     onChanged: (value) {
                       setState(() {
                         selectedRequirement = value;
@@ -247,6 +283,7 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
   Widget _buildDropdown({
     required String hint,
     required String? value,
+    required List<String> options,
     required Function(String?) onChanged,
   }) {
     return Container(
@@ -268,7 +305,9 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
           ),
           value: value,
           icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade600),
-          items: const [],
+          items: options
+              .map((o) => DropdownMenuItem<String>(value: o, child: Text(o)))
+              .toList(),
           onChanged: onChanged,
         ),
       ),
@@ -407,7 +446,8 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
     final towingData = {
       'from': widget.pickupLocation,
       'to': widget.destination,
-      'vehicleType': selectedVehicle,
+      'vehicleType': selectedTowingTypeName,
+      'towingTypeId': selectedTowingTypeId,
       'urgency': selectedUrgency,
       'specialRequirements': selectedRequirement,
       'images': _selectedImages,
@@ -415,11 +455,18 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
 
     _showSnackBar('Towing request submitted successfully!');*/
 
-    // TODO: Navigate to checkout screen
-    context.go(
-      AppRoutes.towingCheckout,
-      //extra: towingData,
-    );
+    final towingData = {
+      'from': widget.pickupLocation,
+      'to': widget.destination,
+      'vehicleType': selectedTowingTypeName,
+      'towingTypeId': selectedTowingTypeId,
+      'urgency': selectedUrgency,
+      'specialRequirements': selectedRequirement,
+      'images': _selectedImages,
+      'destinationLat': widget.destinationLat,
+      'destinationLng': widget.destinationLng,
+    };
+    context.go(AppRoutes.towingCheckout, extra: towingData);
   }
 
   void _showSnackBar(String message) {

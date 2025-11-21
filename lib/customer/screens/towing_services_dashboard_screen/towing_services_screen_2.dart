@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:async';
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../../shared/utils/pages.dart';
 import '../../core/utils/size_utils.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
+import '../../../shared/providers/service_types_provider.dart';
+import '../../../shared/providers/service_providers_provider.dart';
+import '../../../shared/utils/env.dart';
 
 class TowingServicesScreen2 extends StatefulWidget {
   final String? pickupLocation;
@@ -19,6 +26,10 @@ class TowingServicesScreen2 extends StatefulWidget {
 class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
   final TextEditingController _destinationController = TextEditingController();
   GoogleMapController? _mapController;
+  final List<Map<String, dynamic>> _suggestions = [];
+  Timer? _debounce;
+  double? _selectedLat;
+  double? _selectedLng;
   
   // Default location (Accra, Ghana)
   static const CameraPosition _initialPosition = CameraPosition(
@@ -59,7 +70,7 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
         slivers: [
           CustomSliverAppBar(
             title: 'Towing Services',
-            onBackPressed: () => context.go('/towing_services_screen_1'),
+            onBackPressed: () => context.go(AppRoutes.towingServicesScreen1),
             onHistoryPressed: () {
               // Handle info/help action
             },
@@ -68,7 +79,7 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
             child: Stack(
               children: [
                 // Map background
-                //_buildMapView(),
+                _buildMapView(),
                 
                 // Bottom sheet
                 Positioned(
@@ -102,12 +113,7 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
           ),
-          // Dimming overlay
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.black.withOpacity(0.3),
-          ),
+          // Map rendered without overlay for max visibility
         ],
       ),
     );
@@ -168,7 +174,36 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
             const SizedBox(height: 20),
             
             _buildDestinationInput(),
+            const SizedBox(height: 8),
+            _suggestionsList(),
             const SizedBox(height: 20),
+            Consumer(builder: (context, ref, _) {
+              final typesAsync = ref.watch(serviceTypesProvider);
+              final towingType = ref.watch(towingServiceTypeProvider);
+              final providersState = ref.watch(serviceProvidersProvider);
+
+              final towingTypeId = towingType?.id;
+              if (towingTypeId != null && providersState.providers.isEmpty && !providersState.isLoading) {
+                ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
+                  serviceTypeId: towingTypeId,
+                  latitude: 5.6037,
+                  longitude: -0.1870,
+                  limit: 10,
+                );
+              }
+              final text = providersState.isLoading
+                  ? 'Loading nearby providers…'
+                  : providersState.hasError
+                      ? 'Failed to load providers'
+                      : 'Available providers nearby: ${providersState.providers.length}';
+              return Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                  text,
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              );
+            }),
             _buildContinueButton(),
           ],
         ),
@@ -218,6 +253,9 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
             vertical: 16,
           ),
         ),
+        onChanged: (val) {
+          _onQueryChanged(val);
+        },
       ),
     );
   }
@@ -236,7 +274,12 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
           // Navigate to next screen
           final pickupLocation = widget.pickupLocation ?? '';
           final destination = _destinationController.text.trim();
-          context.go('/towing-services/screen3?pickupLocation=${Uri.encodeComponent(pickupLocation)}&destination=${Uri.encodeComponent(destination)}');
+          final lat = _selectedLat != null ? Uri.encodeComponent(_selectedLat!.toString()) : '';
+          final lng = _selectedLng != null ? Uri.encodeComponent(_selectedLng!.toString()) : '';
+          final qp = lat.isNotEmpty && lng.isNotEmpty
+              ? '?pickupLocation=${Uri.encodeComponent(pickupLocation)}&destination=${Uri.encodeComponent(destination)}&destinationLat=$lat&destinationLng=$lng'
+              : '?pickupLocation=${Uri.encodeComponent(pickupLocation)}&destination=${Uri.encodeComponent(destination)}';
+          context.go('${AppRoutes.towingServicesScreen3}$qp');
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B7A8A),
@@ -255,6 +298,123 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
         ),
       ),
     );
+  }
+
+  void _onQueryChanged(String q) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 350), () {
+      if (q.trim().length < 2) {
+        setState(() => _suggestions.clear());
+        return;
+      }
+      _fetchSuggestions(q.trim());
+    });
+  }
+
+  Future<void> _fetchSuggestions(String query) async {
+    try {
+      final dio = Dio(BaseOptions(headers: {'User-Agent': 'protz-app'}));
+      final apiKey = Env.googleMapsApiKey;
+      if (apiKey.isNotEmpty) {
+        final resp = await dio.get(
+          'https://maps.googleapis.com/maps/api/place/autocomplete/json',
+          queryParameters: {
+            'input': query,
+            'key': apiKey,
+            'components': 'country:gh',
+            'types': 'geocode',
+          },
+        );
+        final List preds = resp.data is Map<String, dynamic>
+            ? (resp.data['predictions'] ?? [])
+            : [];
+        final list = preds
+            .map<Map<String, dynamic>>((p) => {
+                  'title': p['description']?.toString() ?? '',
+                  'placeId': p['place_id']?.toString() ?? '',
+                })
+            .where((m) => (m['title'] as String).isNotEmpty && (m['placeId'] as String).isNotEmpty)
+            .toList();
+        setState(() => _suggestions..clear()..addAll(list));
+      } else {
+        final resp = await dio.get(
+          'https://nominatim.openstreetmap.org/search',
+          queryParameters: {'format': 'json', 'q': query, 'limit': 5, 'countrycodes': 'gh'},
+        );
+        final List data = resp.data is List ? resp.data as List : [];
+        final list = data
+            .map<Map<String, dynamic>>((e) => {
+                  'title': e['display_name']?.toString() ?? '',
+                  'lat': double.tryParse(e['lat']?.toString() ?? ''),
+                  'lng': double.tryParse(e['lon']?.toString() ?? ''),
+                })
+            .where((m) => m['lat'] != null && m['lng'] != null)
+            .toList();
+        setState(() => _suggestions..clear()..addAll(list));
+      }
+    } catch (_) {
+      setState(() => _suggestions.clear());
+    }
+  }
+
+  Widget _suggestionsList() {
+    if (_suggestions.isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE5E5EA)),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2)),
+        ],
+      ),
+      child: ListView.builder(
+        shrinkWrap: true,
+        itemCount: _suggestions.length,
+        itemBuilder: (context, i) {
+          final s = _suggestions[i];
+          return ListTile(
+            dense: true,
+            title: Text(s['title'] as String, maxLines: 1, overflow: TextOverflow.ellipsis),
+            onTap: () async {
+              _destinationController.text = s['title'] as String;
+              final apiKey = Env.googleMapsApiKey;
+              if (apiKey.isNotEmpty && s['placeId'] != null) {
+                try {
+                  final dio = Dio(BaseOptions(headers: {'User-Agent': 'protz-app'}));
+                  final details = await dio.get(
+                    'https://maps.googleapis.com/maps/api/place/details/json',
+                    queryParameters: {
+                      'place_id': s['placeId'] as String,
+                      'fields': 'geometry',
+                      'key': apiKey,
+                    },
+                  );
+                  final res = details.data['result'] ?? {};
+                  final loc = res['geometry']?['location'] ?? {};
+                  _selectedLat = (loc['lat'] as num?)?.toDouble();
+                  _selectedLng = (loc['lng'] as num?)?.toDouble();
+                } catch (_) {}
+              } else {
+                _selectedLat = s['lat'] as double?;
+                _selectedLng = s['lng'] as double?;
+              }
+              _updateMapToSelected();
+              setState(() => _suggestions.clear());
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _updateMapToSelected() {
+    if (_mapController == null || _selectedLat == null || _selectedLng == null) return;
+    _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+      target: LatLng(_selectedLat!, _selectedLng!),
+      zoom: 15,
+    )));
   }
 
   Widget _buildHomeIndicator() {

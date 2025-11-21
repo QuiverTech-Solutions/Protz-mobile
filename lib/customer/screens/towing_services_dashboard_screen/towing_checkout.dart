@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../shared/utils/pages.dart';
 import 'widgets/towtruck_entry.dart';
+import '../../../shared/providers/api_service_provider.dart';
+import '../../../shared/providers/service_types_provider.dart';
+import '../../../shared/providers/service_providers_provider.dart';
 
 class TowingCheckout extends StatefulWidget {
   final Map<String, dynamic>? towingData;
@@ -40,6 +44,10 @@ class _TowingCheckoutState extends State<TowingCheckout> {
       'vehicleType': 'Sedan',
       'urgency': 'Standard',
       'specialRequirements': 'None',
+      'pickupLat': 5.6037,
+      'pickupLng': -0.1870,
+      'destinationLat': 5.6140,
+      'destinationLng': -0.2460,
     };
   }
 
@@ -86,7 +94,9 @@ class _TowingCheckoutState extends State<TowingCheckout> {
                     onPressed: () {
                       final from = Uri.encodeComponent('${data['from'] ?? ''}');
                       final to = Uri.encodeComponent('${data['to'] ?? ''}');
-                      context.go('${AppRoutes.towingServicesScreen3}?pickupLocation=$from&destination=$to');
+                      final dLat = Uri.encodeComponent('${data['destinationLat'] ?? ''}');
+                      final dLng = Uri.encodeComponent('${data['destinationLng'] ?? ''}');
+                      context.go('${AppRoutes.towingServicesScreen3}?pickupLocation=$from&destination=$to&destinationLat=$dLat&destinationLng=$dLng');
                     },
                   ),
                   const SizedBox(width: 6),
@@ -146,13 +156,59 @@ class _TowingCheckoutState extends State<TowingCheckout> {
                     const SizedBox(height: 8),
                     const Divider(),
                     Expanded(
-                      child: ListView(
-                        controller: scrollController,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        children: [
-                          ..._buildProviderCards(),
-                          const SizedBox(height: 90), // padding so last card isn't under overlay
-                        ],
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final types = ref.watch(serviceTypesProvider);
+                          final towingType = ref.watch(towingServiceTypeProvider);
+                          final providersState = ref.watch(serviceProvidersProvider);
+
+                          // Trigger load when we have serviceTypeId
+                          final towingTypeId = towingType?.id;
+                          if (towingTypeId != null && !providersState.isLoading && providersState.providers.isEmpty) {
+                            ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
+                              serviceTypeId: towingTypeId,
+                              latitude: 5.6037,
+                              longitude: -0.1870,
+                              limit: 20,
+                            );
+                          }
+
+                          if (types.isLoading || providersState.isLoading) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (types.hasError) {
+                            return Center(child: Text('Failed to load service types'));
+                          }
+                          if (providersState.hasError) {
+                            return Center(child: Text(providersState.error ?? 'Failed to load providers'));
+                          }
+
+                          final items = providersState.providers;
+                          if (items.isEmpty) {
+                            return const Center(child: Text('No providers available'));
+                          }
+                          return ListView.builder(
+                            controller: scrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final p = items[index];
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: index == items.length - 1 ? 0 : 12),
+                                child: TowtruckEntry(
+                                  title: p.name,
+                                  subtitle: 'Will arrive at pickup in approximately ${p.estimatedArrival ?? '-'} mins',
+                                  price: 'GHS ${p.basePrice.toStringAsFixed(0)}',
+                                  oldPrice: null,
+                                  imageAsset: 'assets/images/towing.png',
+                                  selected: selectedOptionIndex == index,
+                                  onTap: () => setState(() => selectedOptionIndex = index),
+                                  onSelectPressed: () => setState(() => selectedOptionIndex = index),
+                                ),
+                              );
+                            },
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -175,7 +231,9 @@ class _TowingCheckoutState extends State<TowingCheckout> {
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   child: Align(
                     alignment: Alignment.bottomCenter,
-                    child: _proceedButton(),
+                    child: Consumer(builder: (context, ref, _) {
+                      return _proceedButton(ref);
+                    }),
                   ),
                 ),
               ),
@@ -263,7 +321,7 @@ class _TowingCheckoutState extends State<TowingCheckout> {
   }
 
   // Bottom sheet proceed button
-  Widget _proceedButton() {
+  Widget _proceedButton(WidgetRef ref) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -273,18 +331,86 @@ class _TowingCheckoutState extends State<TowingCheckout> {
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        onPressed: () {
+        onPressed: () async {
           if (selectedOptionIndex < 0) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Please select a towing service first')),
             );
             return;
           }
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Proceeding to checkout with option #${selectedOptionIndex + 1}')),
-          );
-          // TODO: Navigate to payment screen when available
-          // context.go(AppRoutes.payment);
+          final api = ref.read(apiServiceProvider);
+          // Get profile_id
+          final profileRes = await api.getProfileMe();
+          if (!profileRes.success || profileRes.data == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to fetch profile: ${profileRes.message}')),
+            );
+            return;
+          }
+          final profileId = (profileRes.data!['id'] ?? profileRes.data!['profile_id'] ?? '').toString();
+          if (profileId.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile id missing')));
+            return;
+          }
+          // Get service type id
+          final towingType = ref.read(towingServiceTypeProvider);
+          if (towingType == null) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Towing service type unavailable')));
+            return;
+          }
+          // Compose base service request
+          final now = DateTime.now().toUtc().toIso8601String();
+          final pickupLat = (data['pickupLat'] as num?)?.toDouble() ?? 5.6037;
+          final pickupLng = (data['pickupLng'] as num?)?.toDouble() ?? -0.1870;
+          final destLat = (data['destinationLat'] as num?)?.toDouble() ?? 5.6140;
+          final destLng = (data['destinationLng'] as num?)?.toDouble() ?? -0.2460;
+          final baseReq = {
+            'profile_id': profileId,
+            'service_type_id': towingType.id,
+            'pickup_address': (data['from'] ?? '').toString(),
+            'pickup_latitude': pickupLat,
+            'pickup_longitude': pickupLng,
+            'destination_address': (data['to'] ?? '').toString(),
+            'destination_lat': destLat,
+            'destination_lng': destLng,
+            'special_instructions': (data['specialRequirements'] ?? '').toString(),
+            'requested_at': now,
+          };
+          final createRes = await api.createServiceRequestV1(data: baseReq);
+          if (!createRes.success || createRes.data == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to create request: ${createRes.message}')),
+            );
+            return;
+          }
+          final sr = createRes.data!;
+          final serviceRequestId = (sr['id'] ?? sr['service_request_id'] ?? '').toString();
+          final requestNumber = (sr['request_number'] ?? '').toString();
+          // Create towing-specific request
+          final towingPayload = {
+            'service_request_id': serviceRequestId,
+            'vehicle_id': null,
+            'towing_type_id': data['towingTypeId'],
+            'vehicle_condition': 'accident',
+            'is_emergency': false,
+          };
+          final towingRes = await api.createTowingRequest(data: towingPayload);
+          if (!towingRes.success) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Failed to create towing details: ${towingRes.message}')),
+            );
+            return;
+          }
+          final towingDetailsRes = await api.getTowingRequestByServiceRequest(serviceRequestId);
+          final towingRequestId = towingDetailsRes.success ? (towingDetailsRes.data?['id']?.toString() ?? '') : '';
+          final nextData = {
+            ...data,
+            'serviceRequestId': serviceRequestId,
+            'requestNumber': requestNumber,
+            'selectedProviderIndex': selectedOptionIndex,
+            if (towingRequestId.isNotEmpty) 'towingRequestId': towingRequestId,
+          };
+          context.go(AppRoutes.towingCheckout2, extra: nextData);
         },
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
