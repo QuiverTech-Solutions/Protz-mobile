@@ -86,8 +86,8 @@ class CustomBottomNavBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             SizedBox(
-              width: 24,
-              height: 24.h,
+              width: isSelected ? 26 : 24,
+              height: isSelected ? 26.h : 24.h,
               child: SvgPicture.asset(
                 iconPath,
                 colorFilter: ColorFilter.mode(
@@ -102,7 +102,7 @@ class CustomBottomNavBar extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 12,
-                fontWeight: FontWeight.w400,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 color: isSelected ? const Color(0xFF086788) : const Color(0xFF909090),
                 height: 1.0,
               ),
