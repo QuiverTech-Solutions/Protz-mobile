@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../utils/pages.dart';
 import '../../customer/core/app_export.dart';
@@ -7,20 +8,24 @@ import '../widgets/custom_bottom_nav_bar.dart';
 import '../../service_provider/widgets/provider_status_toggle.dart';
 import '../../service_provider/widgets/sp_bottom_nav_bar.dart';
 import '../../service_provider/core/utils/nav_helper.dart';
-class ChatInboxScreen extends StatefulWidget {
+import '../providers/api_service_provider.dart';
+class ChatInboxScreen extends ConsumerStatefulWidget {
   final bool isProvider;
 
   const ChatInboxScreen({super.key, this.isProvider = false});
 
   @override
-  State<ChatInboxScreen> createState() => _ChatInboxScreenState();
+  ConsumerState<ChatInboxScreen> createState() => _ChatInboxScreenState();
 }
 
-class _ChatInboxScreenState extends State<ChatInboxScreen>
+class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTabIndex = 0;
   int _selectedBottomNavIndex = 2; // Chats tab is selected
+  bool _isLoading = true;
+  String? _error;
+  
 
   @override
   void initState() {
@@ -33,6 +38,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
         });
       }
     });
+    _loadConversations();
   }
 
   @override
@@ -100,7 +106,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
                     });
                     switch (index) {
                       case 0:
-                        context.go(AppRouteNames.customerHome);
+                        context.go(AppRoutes.customerHome);
                         break;
                       case 1:
                         context.push(AppRoutes.history);
@@ -196,10 +202,7 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
             // Refresh icon
             IconButton(
               onPressed: () {
-                // Handle refresh
-                setState(() {
-                  // Refresh chat list
-                });
+                _loadConversations();
               },
               icon: const Icon(
                 Icons.refresh,
@@ -385,14 +388,38 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
       child: TabBarView(
         controller: _tabController,
         children: [
-          _buildAllChats(),
-          _buildUnreadChats(),
+          _isLoading ? const Center(child: CircularProgressIndicator()) : (_error != null ? Center(child: Text(_error!)) : _buildAllChats()),
+          _isLoading ? const Center(child: CircularProgressIndicator()) : (_error != null ? Center(child: Text(_error!)) : _buildUnreadChats()),
         ],
       ),
     );
   }
 
   Widget _buildAllChats() {
+    if (_allChats.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              const Text(
+                'No chats yet',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Start a conversation from orders or providers',
+                style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return ListView.builder(
       padding: EdgeInsets.zero,
       itemCount: _allChats.length,
@@ -404,6 +431,29 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
 
   Widget _buildUnreadChats() {
     final unreadChats = _allChats.where((chat) => !chat.isRead).toList();
+    if (unreadChats.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.mark_chat_unread, size: 64, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              const Text(
+                'No unread chats',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'New messages will appear here',
+                style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return ListView.builder(
       padding: EdgeInsets.zero,
       itemCount: unreadChats.length,
@@ -424,6 +474,8 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
             'contactName': chat.senderName,
             'contactSubtitle': 'Bulk Water Supplier',
             'ctx': widget.isProvider ? 'provider' : 'customer',
+            if (chat.requestId != null && chat.requestId!.isNotEmpty) 'requestId': chat.requestId!,
+            if (chat.otherProfileId != null && chat.otherProfileId!.isNotEmpty) 'otherProfileId': chat.otherProfileId!,
           },
         );
       },
@@ -530,6 +582,38 @@ class _ChatInboxScreenState extends State<ChatInboxScreen>
       ),
     ));
   }
+
+  Future<void> _loadConversations() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    final api = ref.read(apiServiceProvider);
+    final res = await api.getConversations(limit: 50);
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (res.success && res.data != null) {
+        final items = res.data!;
+        _allChats
+          ..clear()
+          ..addAll(items.map((c) => ChatItem(
+                senderName: (c['contact_name'] ?? c['sender_name'] ?? 'Unknown').toString(),
+                messagePreview: (c['last_message_text'] ?? c['preview'] ?? '').toString(),
+                timestamp: (c['last_message_time'] ?? '').toString(),
+                isRead: (c['unread_count'] is int) ? (c['unread_count'] as int) == 0 : true,
+                isSent: false,
+                isActive: false,
+                avatarUrl: (c['avatar_url'] ?? '').toString(),
+                requestId: (c['request_id'] ?? '').toString(),
+                otherProfileId: (c['other_profile_id'] ?? '').toString(),
+              )));
+      } else {
+        _error = res.message ?? 'Failed to load conversations';
+      }
+    });
+  }
+
 }
 
 class ChatItem {
@@ -540,6 +624,8 @@ class ChatItem {
   final bool isSent;
   final bool isActive;
   final String avatarUrl;
+  final String? requestId;
+  final String? otherProfileId;
 
   ChatItem({
     required this.senderName,
@@ -549,5 +635,7 @@ class ChatItem {
     this.isSent = false,
     this.isActive = false,
     this.avatarUrl = '',
+    this.requestId,
+    this.otherProfileId,
   });
 }

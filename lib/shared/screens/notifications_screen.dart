@@ -1,87 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../customer/core/app_export.dart';
 import '../widgets/notification_order_widget.dart';
+import '../providers/api_service_provider.dart';
 
-class NotificationsScreen extends StatefulWidget {
+class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() => _NotificationsScreenState();
+  ConsumerState<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
-class _NotificationsScreenState extends State<NotificationsScreen>
+class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
-  // Sample notification data
-  final List<NotificationData> _allNotifications = [
-    NotificationData(
-      id: '1',
-      type: 'Order confirmed',
-      date: '20/09/2025',
-      orderNumber: '#12345',
-      description: 'Order number #12345 has been confirmed and the tow truck is on the way to pickup your vehicle.',
-      fromLocation: 'Accra Newtown',
-      toLocation: 'Mr. Krabbs Mechanic Shop',
-      serviceName: 'Ofosu Towing Services',
-      price: 'GHS 400.00',
-      isRead: false,
-    ),
-    NotificationData(
-      id: '2',
-      type: 'Order confirmed',
-      date: '24/09/2025',
-      orderNumber: '#12345',
-      description: 'Order number #12345 has been confirmed and the water is on its way to you.',
-      fromLocation: 'Delivery to',
-      toLocation: 'No.1 Ashongman Estates',
-      serviceName: 'Mr. Ansah & Sons',
-      price: 'GHS 200.00',
-      isRead: false,
-    ),
-    NotificationData(
-      id: '3',
-      type: 'Order confirmed',
-      date: '20/09/2025',
-      orderNumber: '#12345',
-      description: 'Order number #12345 has been confirmed and the tow truck is on the way to pickup your vehicle.',
-      fromLocation: 'Accra Newtown',
-      toLocation: 'Mr. Krabbs Mechanic Shop',
-      serviceName: 'Ofosu Towing Services',
-      price: 'GHS 400.00',
-      isRead: true,
-    ),
-    NotificationData(
-      id: '4',
-      type: 'Order confirmed',
-      date: '24/09/2025',
-      orderNumber: '#12345',
-      description: 'Order number #12345 has been confirmed and the water is on its way to you.',
-      fromLocation: 'Delivery to',
-      toLocation: 'No.1 Ashongman Estates',
-      serviceName: 'Mr. Ansah & Sons',
-      price: 'GHS 200.00',
-      isRead: true,
-    ),
-    NotificationData(
-      id: '5',
-      type: 'Order confirmed',
-      date: '20/09/2025',
-      orderNumber: '#12345',
-      description: 'Order number #12345 has been confirmed and the tow truck is on the way to pickup your vehicle.',
-      fromLocation: 'Accra Newtown',
-      toLocation: 'Mr. Krabbs Mechanic Shop',
-      serviceName: 'Ofosu Towing Services',
-      price: 'GHS 400.00',
-      isRead: true,
-    ),
-  ];
+  final List<NotificationData> _allNotifications = [];
+  bool _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadNotifications();
   }
 
   @override
@@ -94,6 +36,42 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       _allNotifications.where((notification) => !notification.isRead).toList();
 
   int get _unreadCount => _unreadNotifications.length;
+
+  Future<void> _loadNotifications() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    final api = ref.read(apiServiceProvider);
+    final res = await api.getNotifications();
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        if (res.success && res.data != null) {
+          _allNotifications
+            ..clear()
+            ..addAll(res.data!.map(_mapNotification));
+        } else {
+          _error = res.message ?? 'Failed to load notifications';
+        }
+      });
+    }
+  }
+
+  NotificationData _mapNotification(Map<String, dynamic> json) {
+    return NotificationData(
+      id: (json['id'] ?? '').toString(),
+      type: (json['type'] ?? 'Notification').toString(),
+      date: (json['created_at'] ?? json['date'] ?? '').toString(),
+      orderNumber: (json['order_number'] ?? json['request_id'] ?? '').toString(),
+      description: (json['description'] ?? json['message'] ?? '').toString(),
+      fromLocation: (json['from_location'] ?? '').toString(),
+      toLocation: (json['to_location'] ?? '').toString(),
+      serviceName: (json['service_name'] ?? '').toString(),
+      price: (json['price'] ?? '').toString(),
+      isRead: json['is_read'] == true,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,8 +86,16 @@ class _NotificationsScreenState extends State<NotificationsScreen>
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildNotificationsList(_allNotifications),
-                  _buildNotificationsList(_unreadNotifications),
+                  _isLoading
+                      ? Center(child: const CircularProgressIndicator())
+                      : _error != null
+                          ? Center(child: Text(_error!))
+                          : _buildNotificationsList(_allNotifications),
+                  _isLoading
+                      ? Center(child: const CircularProgressIndicator())
+                      : _error != null
+                          ? Center(child: Text(_error!))
+                          : _buildNotificationsList(_unreadNotifications),
                 ],
               ),
             ),
@@ -268,15 +254,16 @@ class _NotificationsScreenState extends State<NotificationsScreen>
         final notification = notifications[index];
         return NotificationOrderWidget(
           notification: notification,
-          onTap: () {
-            // Mark as read when tapped
+          onTap: () async {
             if (!notification.isRead) {
-              setState(() {
-                notification.isRead = true;
-              });
+              final api = ref.read(apiServiceProvider);
+              final res = await api.markNotificationRead(notification.id);
+              if (res.success) {
+                setState(() {
+                  notification.isRead = true;
+                });
+              }
             }
-            // Navigate to order details or tracking screen
-            // context.push('/customer/order-details/${notification.orderNumber}');
           },
         );
       },
