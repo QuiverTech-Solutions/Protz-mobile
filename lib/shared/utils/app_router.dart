@@ -7,9 +7,14 @@ import 'package:protz/service_provider/screens/WD_dashboard/sp_water_home.dart';
 import 'package:protz/service_provider/screens/WD_dashboard/sp_water_order_status.dart';
 import 'package:protz/service_provider/screens/sp_order_requests.dart';
 import 'package:protz/service_provider/screens/TW_dashboard/sp_towing_order_status.dart';
+import 'package:protz/customer/screens/order_requests/customer_order_requests.dart';
+import 'package:protz/customer/screens/towing_services_dashboard_screen/customer_towing_order_status.dart';
+import 'package:protz/customer/screens/water_delivery_dashboard_screen/customer_water_order_status.dart';
 import 'package:protz/service_provider/screens/sp_finances_screen.dart';
 import 'package:protz/service_provider/screens/sp_account_page.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_dashboard_screen.dart';
+import '../../customer/screens/water_delivery_dashboard_screen/water_checkout.dart';
+import '../../customer/screens/water_delivery_dashboard_screen/water_checkout_2.dart';
 import '../../shared/screens/account_settings_screen.dart';
 import '../../customer/screens/acount_screens/delete_account_screen.dart';
 import '../models/service_request.dart';
@@ -18,10 +23,14 @@ import '../../auth/screens/new_password_screen.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_screen_1.dart';
 import '../../customer/screens/water_delivery_dashboard_screen/water_delivery_screen_2.dart';
 import 'pages.dart';
+import '../../customer/screens/towing_services_dashboard_screen/towing_checkout_2.dart';
+import '../screens/wallet_confirmation_screen.dart';
+import '../screens/momo_confirmation_screen.dart';
+import '../../customer/screens/feedback_rating_screen/feedback_rating_screen.dart';
 
 class AppRouter {
   static final GoRouter _router = GoRouter(
-    initialLocation:AppRoutes.providerHome,
+    initialLocation:'/',
     debugLogDiagnostics: true,
     routes: [
       // Splash/Initial Route
@@ -125,10 +134,64 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        path: AppRoutes.customerOrderRequests,
+        name: AppRouteNames.customerOrderRequests,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: const CustomerOrderRequests(),
+          state: state,
+        ),
+      ),
+      GoRoute(
         path: AppRoutes.waterDeliveryDashboard,
         name: AppRouteNames.waterDeliveryDashboard,
         pageBuilder: (context, state) => CustomTransitions.fadeTransition(
           child: const WaterDeliveryDashboard(),
+          state: state,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.waterCheckout,
+        name: AppRouteNames.waterCheckout,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          Map<String, dynamic>? data;
+          if (extra is Map<String, dynamic>) {
+            data = extra;
+          }
+          return CustomTransitions.slideTransition(
+            child: WaterCheckout(waterData: data),
+            state: state,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.waterCheckout2,
+        name: AppRouteNames.waterCheckout2,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          Map<String, dynamic>? data;
+          if (extra is Map<String, dynamic>) {
+            data = extra;
+          }
+          return CustomTransitions.slideTransition(
+            child: WaterCheckout2(waterData: data),
+            state: state,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.customerActiveTowingJob,
+        name: AppRouteNames.customerActiveTowingJob,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: const CustomerTowingOrderStatus(),
+          state: state,
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.customerActiveWaterJob,
+        name: AppRouteNames.customerActiveWaterJob,
+        pageBuilder: (context, state) => CustomTransitions.slideTransition(
+          child: const CustomerWaterOrderStatus(),
           state: state,
         ),
       ),
@@ -217,6 +280,35 @@ class AppRouter {
           state: state,
         ),
       ),
+      GoRoute(
+        path: AppRoutes.feedbackRating,
+        name: AppRouteNames.feedbackRating,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          String providerName = 'Service Provider';
+          double providerRating = 0.0;
+          String serviceType = 'Service';
+          String? avatarUrl;
+          String? serviceRequestId;
+          if (extra is Map<String, dynamic>) {
+            providerName = (extra['providerName'] ?? providerName).toString();
+            providerRating = ((extra['providerRating'] as num?)?.toDouble() ?? providerRating);
+            serviceType = (extra['serviceType'] ?? serviceType).toString();
+            avatarUrl = extra['providerAvatarUrl']?.toString();
+            serviceRequestId = extra['serviceRequestId']?.toString();
+          }
+          return CustomTransitions.slideTransition(
+            child: FeedbackRatingScreen(
+              providerName: providerName,
+              providerRating: providerRating,
+              serviceType: serviceType,
+              providerAvatarUrl: avatarUrl,
+              serviceRequestId: serviceRequestId,
+            ),
+            state: state,
+          );
+        },
+      ),
       
       // Towing Service Screens
       GoRoute(
@@ -260,6 +352,77 @@ class AppRouter {
           return CustomTransitions.slideTransition(
             child: TowingCheckout(
               towingData: extra is Map<String, dynamic> ? extra : null,
+            ),
+            state: state,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.towingCheckout2,
+        name: AppRouteNames.towingCheckout2,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          return CustomTransitions.slideTransition(
+            child: TowingCheckout2(
+              towingData: extra is Map<String, dynamic> ? extra : null,
+            ),
+            state: state,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.walletConfirm,
+        name: AppRouteNames.walletConfirm,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          double amount = 0;
+          String providerName = '';
+          String serviceRequestId = '';
+          String? reference;
+          String? serviceType;
+          if (extra is Map<String, dynamic>) {
+            amount = (extra['amount'] as num?)?.toDouble() ?? 0;
+            providerName = (extra['providerName'] ?? '').toString();
+            serviceRequestId = (extra['serviceRequestId'] ?? '').toString();
+            reference = extra['reference']?.toString();
+            serviceType = extra['serviceType']?.toString();
+          }
+          return CustomTransitions.slideTransition(
+            child: WalletConfirmationScreen(
+              serviceRequestId: serviceRequestId,
+              amount: amount,
+              providerName: providerName,
+              reference: reference,
+              serviceType: serviceType,
+            ),
+            state: state,
+          );
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.momoConfirm,
+        name: AppRouteNames.momoConfirm,
+        pageBuilder: (context, state) {
+          final extra = state.extra;
+          double amount = 0;
+          String providerName = '';
+          String serviceRequestId = '';
+          String? reference;
+          String? serviceType;
+          if (extra is Map<String, dynamic>) {
+            amount = (extra['amount'] as num?)?.toDouble() ?? 0;
+            providerName = (extra['providerName'] ?? '').toString();
+            serviceRequestId = (extra['serviceRequestId'] ?? '').toString();
+            reference = extra['reference']?.toString();
+            serviceType = extra['serviceType']?.toString();
+          }
+          return CustomTransitions.slideTransition(
+            child: MomoConfirmationScreen(
+              serviceRequestId: serviceRequestId,
+              amount: amount,
+              providerName: providerName,
+              reference: reference,
+              serviceType: serviceType,
             ),
             state: state,
           );

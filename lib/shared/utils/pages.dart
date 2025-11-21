@@ -16,6 +16,8 @@ export '../../customer/screens/towing_services_dashboard_screen/towing_services_
 export '../../customer/screens/towing_services_dashboard_screen/towing_services_screen_2.dart';
 export '../../customer/screens/towing_services_dashboard_screen/towing_services_screen_3.dart';
 export '../../customer/screens/towing_services_dashboard_screen/towing_checkout.dart';
+export '../../customer/screens/towing_services_dashboard_screen/towing_checkout_2.dart';
+export '../../customer/screens/feedback_rating_screen/feedback_rating_screen.dart';
 
 // export '../../customer/screens/booking_screen.dart';
 // export '../../customer/screens/tracking_screen.dart';
@@ -25,6 +27,8 @@ export '../../customer/screens/towing_services_dashboard_screen/towing_checkout.
 export '../../customer/screens/acount_screens/profile_screen.dart';
 export '../../customer/screens/acount_screens/security_password_screen.dart';
 export '../screens/notifications_screen.dart';
+export '../screens/wallet_confirmation_screen.dart';
+export '../screens/momo_confirmation_screen.dart';
 export '../../customer/screens/acount_screens/wallet_screen.dart';
 export '../../customer/screens/acount_screens/add_mobile_money_screen.dart';
 export '../../customer/screens/acount_screens/add_card_screen.dart';
@@ -89,6 +93,7 @@ class AppRoutes {
   static const String chatThread = '/customer/chat-thread';
   static const String notifications = '/customer/notifications';
   static const String deleteAccount = '/customer/delete-account';
+  static const String feedbackRating = '/customer/feedback-rating';
   
   // Provider Routes
   static const String providerHome = '/provider';
@@ -124,6 +129,9 @@ class AppRoutes {
   static const String towingServicesScreen2 = '/towing-services/screen2';
   static const String towingServicesScreen3 = '/towing-services/screen3';
   static const String towingCheckout = '/towing-services/checkout';
+  static const String towingCheckout2 = '/towing-services/checkout-2';
+  static const String walletConfirm = '/payment/wallet-confirm';
+  static const String momoConfirm = '/payment/momo-confirm';
   static const String waterOrder = '/services/water/order';
   static const String deliveryDetails = '/services/water/delivery-details';
   
@@ -141,6 +149,11 @@ class AppRoutes {
   static const String waterDeliveryScreen1 = '/water-delivery-screen1';
   static const String waterDeliveryDashboard = '/water-delivery';
   static const String providerOrderRequestDetails = '/provider/request-details';
+  static const String customerOrderRequests = '/customer/order-requests';
+  static const String customerActiveTowingJob = '/customer/active-towing-job';
+  static const String customerActiveWaterJob = '/customer/active-water-job';
+  static const String waterCheckout = '/water-delivery/checkout';
+  static const String waterCheckout2 = '/water-delivery/checkout-2';
 }
 
 // GoRouter Route Names (for named navigation)
@@ -175,6 +188,7 @@ class AppRouteNames {
   static const String chatThread = 'chat-thread';
   static const String notifications = 'notifications';
   static const String deleteAccount = 'delete-account';
+  static const String feedbackRating = 'feedback-rating';
   
   // Provider Route Names
   static const String providerHome = 'provider-home';
@@ -210,6 +224,9 @@ class AppRouteNames {
   static const String towingServicesScreen2 = 'towing-services-screen2';
   static const String towingServicesScreen3 = 'towing-services-screen3';
   static const String towingCheckout = 'towing-services-checkout';
+  static const String towingCheckout2 = 'towing-services-checkout-2';
+  static const String walletConfirm = 'wallet-confirm';
+  static const String momoConfirm = 'momo-confirm';
   static const String waterOrder = 'water-order';
   static const String deliveryDetails = 'delivery-details';
   
@@ -227,6 +244,11 @@ class AppRouteNames {
   static const String waterDeliveryScreen1 = 'water-delivery-screen1';
   static const String waterDeliveryDashboard = 'water-delivery';
   static const String providerOrderRequestDetails = 'provider-order-request-details';
+  static const String customerOrderRequests = 'customer-order-requests';
+  static const String customerActiveTowingJob = 'customer-active-towing-job';
+  static const String customerActiveWaterJob = 'customer-active-water-job';
+  static const String waterCheckout = 'water-delivery-checkout';
+  static const String waterCheckout2 = 'water-delivery-checkout-2';
 }
 
 // GoRouter Navigation Helper Class
