@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/app_export.dart';
 import '../../../auth/widgets/auth_text_field.dart';
 import '../../../shared/widgets/custom_button.dart';
+import '../../../shared/providers/api_service_provider.dart';
 
 enum TwoFactorMethod { email, phone }
 
@@ -375,7 +377,7 @@ class _SecurityPasswordScreenState extends State<SecurityPasswordScreen> {
               const SizedBox(height: 24),
               CustomButton(
                 text: 'Save Changes',
-                onPressed: () {
+                onPressed: () async {
                   final isValid = (_validatePassword(_currentPasswordController.text) == null) &&
                       (_validatePassword(_newPasswordController.text) == null) &&
                       (_validateConfirmPassword(_confirmPasswordController.text) == null);
@@ -389,10 +391,13 @@ class _SecurityPasswordScreenState extends State<SecurityPasswordScreen> {
                     );
                     return;
                   }
+                  final container = ProviderScope.containerOf(context, listen: false);
+                  final api = container.read(apiServiceProvider);
+                  final res = await api.patchUserMe({'password': _newPasswordController.text.trim()});
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Password updated securely'),
-                      backgroundColor: Colors.green,
+                    SnackBar(
+                      content: Text(res.success ? 'Password updated securely' : 'Update failed: ${res.message}'),
+                      backgroundColor: res.success ? Colors.green : Colors.red,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
