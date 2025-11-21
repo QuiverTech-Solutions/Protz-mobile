@@ -18,5 +18,6 @@ part 'api_service_provider.g.dart';
 ApiService apiService(ApiServiceRef ref) {
   final service = ApiService();
   service.initialize();
+  service.refreshConfigIfNeeded();
   return service;
 }

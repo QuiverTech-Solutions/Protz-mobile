@@ -177,6 +177,40 @@ class ServiceProviders extends _$ServiceProviders {
     }
   }
 
+  /// Load active providers using service type ID (per docs)
+  Future<void> loadActiveProvidersByTypeId({
+    required String serviceTypeId,
+    double? latitude,
+    double? longitude,
+    int? limit,
+  }) async {
+    try {
+      state = state.copyWith(isLoading: true, error: null);
+      final api = ref.read(apiServiceProvider);
+      final res = await api.getActiveProviders(
+        serviceTypeId: serviceTypeId,
+        latitude: latitude,
+        longitude: longitude,
+        limit: limit,
+      );
+      if (res.success && res.data != null) {
+        state = ServiceProvidersState(
+          providers: res.data!,
+          isLoading: false,
+          lastUpdated: DateTime.now(),
+          lastParams: state.lastParams,
+        );
+      } else {
+        state = state.copyWith(isLoading: false, error: res.message);
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: 'Failed to load providers: ${e.toString()}',
+      );
+    }
+  }
+
   /// Refresh current providers data
   Future<void> refresh() async {
     if (state.lastParams != null) {
