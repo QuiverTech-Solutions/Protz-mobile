@@ -154,7 +154,7 @@ class _TowingServicesDashboardScreenState
   Widget _buildTowVehicleCard() {
     return GestureDetector(
       onTap: () {
-        context.go('/towing-services/screen1');
+        context.go(AppRoutes.towingServicesScreen1);
       },
       child: Container(
         width: double.infinity,
