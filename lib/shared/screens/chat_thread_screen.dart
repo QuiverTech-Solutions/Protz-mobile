@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:protz/shared/utils/pages.dart';
 import '../../customer/core/utils/size_utils.dart';
@@ -9,12 +10,15 @@ import '../../service_provider/widgets/provider_status_toggle.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../../service_provider/widgets/sp_bottom_nav_bar.dart';
 import '../../service_provider/core/utils/nav_helper.dart';
+import '../providers/api_service_provider.dart';
 
-class ChatThreadScreen extends StatefulWidget {
+class ChatThreadScreen extends ConsumerStatefulWidget {
   final String contactName;
   final String contactSubtitle;
   final String contactAvatar;
   final bool isProvider;
+  final String? requestId;
+  final String? otherProfileId;
 
   const ChatThreadScreen({
     super.key,
@@ -22,13 +26,15 @@ class ChatThreadScreen extends StatefulWidget {
     required this.contactSubtitle,
     required this.contactAvatar,
     this.isProvider = false,
+    this.requestId,
+    this.otherProfileId,
   });
 
   @override
-  State<ChatThreadScreen> createState() => _ChatThreadScreenState();
+  ConsumerState<ChatThreadScreen> createState() => _ChatThreadScreenState();
 }
 
-class _ChatThreadScreenState extends State<ChatThreadScreen> {
+class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   
@@ -94,6 +100,56 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadMessagesIfAvailable();
+  }
+
+  Future<void> _loadMessagesIfAvailable() async {
+    final api = ref.read(apiServiceProvider);
+    if (widget.requestId != null && widget.requestId!.isNotEmpty) {
+      final res = await api.getMessagesForRequest(requestId: widget.requestId!);
+      if (!mounted) return;
+      if (res.success && res.data != null) {
+        final list = res.data!;
+        setState(() {
+          _messages
+            ..clear()
+            ..addAll(list.map((m) => ChatMessage(
+                  id: (m['id'] ?? '').toString(),
+                  text: (m['message_content'] ?? m['text'] ?? '').toString(),
+                  isFromMe: (m['is_from_me'] == true) || (m['sender_id'] == 'me'),
+                  timestamp: DateTime.tryParse((m['created_at'] ?? '').toString()) ?? DateTime.now(),
+                  status: MessageStatus.seen,
+                  imageUrl: (m['attachment_url'] as String?)
+                )));
+        });
+      }
+      return;
+    }
+    if (widget.otherProfileId != null && widget.otherProfileId!.isNotEmpty) {
+      final res = await api.getConversationMessages(otherProfileId: widget.otherProfileId!);
+      if (!mounted) return;
+      if (res.success && res.data != null) {
+        final list = res.data!;
+        setState(() {
+          _messages
+            ..clear()
+            ..addAll(list.map((m) => ChatMessage(
+                  id: (m['id'] ?? '').toString(),
+                  text: (m['message_content'] ?? m['text'] ?? '').toString(),
+                  isFromMe: (m['is_from_me'] == true) || (m['sender_id'] == 'me'),
+                  timestamp: DateTime.tryParse((m['created_at'] ?? '').toString()) ?? DateTime.now(),
+                  status: MessageStatus.seen,
+                  imageUrl: (m['attachment_url'] as String?)
+                )));
+        });
+      }
+    }
+    // Fallback block removed: handled above for requestId or otherProfileId
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Sizer(
       builder: (context, orientation, deviceType) {
@@ -149,7 +205,7 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
                   onTap: (index) {
                     switch (index) {
                       case 0:
-                        context.go(AppRouteNames.customerHome);
+                        context.go(AppRoutes.customerHome);
                         break;
                       case 1:
                         context.push(AppRoutes.history);
@@ -289,14 +345,41 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
   }
 
   Widget _buildMessagesList() {
+    final items = _getMessagesWithSeparators();
+    if (items.isEmpty) {
+      return Container(
+        color: const Color(0xFFF8F9FA),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey[400]),
+                const SizedBox(height: 12),
+                const Text(
+                  'No messages yet',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF6B7280)),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Send a message to start the conversation',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
     return Container(
       color: const Color(0xFFF8F9FA),
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        itemCount: _getMessagesWithSeparators().length,
+        itemCount: items.length,
         itemBuilder: (context, index) {
-          final item = _getMessagesWithSeparators()[index];
+          final item = items[index];
           if (item is String) {
             return _buildDateSeparator(item);
           } else if (item is ChatMessage) {
@@ -571,30 +654,43 @@ class _ChatThreadScreenState extends State<ChatThreadScreen> {
     );
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isNotEmpty) {
-      setState(() {
-        _messages.add(
-          ChatMessage(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            text: _messageController.text.trim(),
+  void _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    final id = widget.requestId;
+    if (id != null && id.isNotEmpty) {
+      final api = ref.read(apiServiceProvider);
+      final res = await api.sendMessage(requestId: id, messageContent: text);
+      if (res.success) {
+        setState(() {
+          _messages.add(ChatMessage(
+            id: (res.data?['id'] ?? DateTime.now().millisecondsSinceEpoch).toString(),
+            text: (res.data?['message_content'] ?? text).toString(),
             isFromMe: true,
-            timestamp: DateTime.now(),
+            timestamp: DateTime.tryParse((res.data?['created_at'] ?? '').toString()) ?? DateTime.now(),
             status: MessageStatus.sent,
-          ),
-        );
-      });
-      _messageController.clear();
-      
-      // Scroll to bottom
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+          ));
+        });
+      }
+    } else {
+      setState(() {
+        _messages.add(ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          text: text,
+          isFromMe: true,
+          timestamp: DateTime.now(),
+          status: MessageStatus.sent,
+        ));
       });
     }
+    _messageController.clear();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   String _formatTime(DateTime dateTime) {

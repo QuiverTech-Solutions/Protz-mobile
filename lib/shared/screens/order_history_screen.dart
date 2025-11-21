@@ -1,20 +1,58 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../utils/pages.dart';
 import '../../customer/core/app_export.dart';
 import '../widgets/custom_service_card.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
+import '../providers/api_service_provider.dart';
+import '../models/service_request.dart';
+import '../../service_provider/widgets/sp_bottom_nav_bar.dart';
+import '../../service_provider/core/utils/nav_helper.dart';
 
-class OrderHistoryScreen extends StatefulWidget {
-  const OrderHistoryScreen({super.key});
+class OrderHistoryScreen extends ConsumerStatefulWidget {
+  final bool isProvider;
+  const OrderHistoryScreen({super.key, this.isProvider = false});
 
   @override
-  State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
+  ConsumerState<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
 }
 
-class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
+class _OrderHistoryScreenState extends ConsumerState<OrderHistoryScreen> {
   int _currentNavIndex = 1; // Orders tab is selected (index 1)
+  bool _isLoading = true;
+  String? _error;
+  final List<ServiceRequest> _orders = [];
+  int _page = 1;
+  final int _limit = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory({String? status}) async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    final api = ref.read(apiServiceProvider);
+    final res = await api.getMyServiceRequests(status: status, limit: _limit, offset: (_page - 1) * _limit);
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+        if (res.success && res.data != null) {
+          _orders
+            ..clear()
+            ..addAll(res.data!);
+        } else {
+          _error = res.message ?? 'Failed to load service history';
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,12 +74,61 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildSectionTitle('This month'),
-                          _buildHistoryGroup(_thisMonth()),
-                          SizedBox(height: 20.h),
-                          _buildSectionTitle('Last month'),
-                          _buildHistoryGroup(_lastMonth()),
-                          SizedBox(height: 24.h),
+                          if (_isLoading)
+                            Center(
+                              child: Padding(
+                                padding: EdgeInsets.only(top: 24.h),
+                                child: const CircularProgressIndicator(),
+                              ),
+                            )
+                          else if (_error != null)
+                            Padding(
+                              padding: EdgeInsets.only(top: 16.h),
+                              child: Text(
+                                _error!,
+                                style: TextStyleHelper.instance.body14RegularPoppins
+                                    .copyWith(color: appTheme.red_A100),
+                              ),
+                            )
+                          else
+                            (_orders.isEmpty
+                                ? Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.only(top: 48.h),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.history, size: 64.h, color: appTheme.blue_gray_400),
+                                          SizedBox(height: 12.h),
+                                          Text(
+                                            'No orders yet',
+                                            style: TextStyle(
+                                              fontSize: 16.fSize,
+                                              fontWeight: FontWeight.w600,
+                                              color: appTheme.light_blue_900,
+                                            ),
+                                          ),
+                                          SizedBox(height: 6.h),
+                                          Text(
+                                            'Your past orders will appear here',
+                                            style: TextStyle(
+                                              fontSize: 14.fSize,
+                                              color: appTheme.blue_gray_400,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      _buildSectionTitle('All Orders'),
+                                      _buildHistoryList(_orders),
+                                      SizedBox(height: 24.h),
+                                    ],
+                                  )),
                         ],
                       ),
                     ),
@@ -50,32 +137,61 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               ),
             ),
           ),
-          bottomNavigationBar: CustomBottomNavBar(
-            currentIndex: _currentNavIndex,
-            onTap: (index) {
-              setState(() {
-                _currentNavIndex = index;
-              });
-              // Handle navigation based on index
-              switch (index) {
-                case 0:
-                  // Home - navigate to home screen
-                  context.go(AppRouteNames.customerHome);
-                  break;
-                case 1:
-                  // Orders - already on orders screen
-                  break;
-                case 2:
-                  // Chats - navigate to chats screen
-                  context.push(AppRoutes.chatInbox);
-                  break;
-                case 3:
-                  // Account - navigate to account screen
-                  context.push(AppRoutes.accountSettings);
-                  break;
-              }
-            },
-          ),
+          bottomNavigationBar: widget.isProvider
+              ? SPBottomNavBar(
+                  currentIndex: 1,
+                  items: const [
+                    SPBottomNavItem(
+                      icon: Icon(Icons.home_outlined),
+                      activeIcon: Icon(Icons.home),
+                      label: 'Home',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.assignment_outlined),
+                      activeIcon: Icon(Icons.assignment),
+                      label: 'Requests',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.chat_bubble_outline),
+                      activeIcon: Icon(Icons.chat_bubble),
+                      label: 'Chats',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.account_balance_wallet_outlined),
+                      activeIcon: Icon(Icons.account_balance_wallet),
+                      label: 'Finances',
+                    ),
+                    SPBottomNavItem(
+                      icon: Icon(Icons.person_outline),
+                      activeIcon: Icon(Icons.person),
+                      label: 'Account',
+                    ),
+                  ],
+                  onItemSelected: (index) {
+                    ProviderNav.goToIndex(context, index);
+                  },
+                )
+              : CustomBottomNavBar(
+                  currentIndex: _currentNavIndex,
+                  onTap: (index) {
+                    setState(() {
+                      _currentNavIndex = index;
+                    });
+                    switch (index) {
+                      case 0:
+                        context.go(AppRoutes.customerHome);
+                        break;
+                      case 1:
+                        break;
+                      case 2:
+                        context.push(AppRoutes.chatInbox);
+                        break;
+                      case 3:
+                        context.push(AppRoutes.accountSettings);
+                        break;
+                    }
+                  },
+                ),
         );
       },
     );
@@ -140,7 +256,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  Widget _buildHistoryGroup(List<_OrderItem> items) {
+  Widget _buildHistoryList(List<ServiceRequest> items) {
     return Container(
       decoration: BoxDecoration(
         color: appTheme.white_A700,
@@ -148,92 +264,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         border: Border.all(color: appTheme.light_blue_50, width: 4.h),
       ),
       child: Column(
-        children: items
-            .map(
-              (item) => CustomServiceCard(
-                serviceTitle: item.serviceTitle,
-                date: item.date,
-                originLocation: item.originLocation,
-                destinationLocation: item.destinationLocation,
-                serviceProvider: item.serviceProvider,
-                price: item.price,
-                margin: EdgeInsets.only(bottom: 8.h),
-              ),
-            )
-            .toList(),
+        children: items.map((order) {
+          return CustomServiceCard(
+            serviceTitle: 'Service Request',
+            date: order.createdAt.toString().split(' ')[0],
+            originLocation: order.pickupLocation.address,
+            destinationLocation: order.destinationLocation?.address ?? 'N/A',
+            serviceProvider: order.assignedProvider?.name ?? 'Unassigned',
+            price: 'GHS ${order.finalCost?.toStringAsFixed(2) ?? order.estimatedCost?.toStringAsFixed(2) ?? '0.00'}',
+            margin: EdgeInsets.only(bottom: 8.h),
+          );
+        }).toList(),
       ),
     );
   }
-
-  List<_OrderItem> _thisMonth() => [
-        _OrderItem(
-          serviceTitle: 'Towing Service',
-          date: '20/09/2025',
-          originLocation: 'Accra Newtown',
-          destinationLocation: 'Mr. Krabbs Mechanic Shop',
-          serviceProvider: 'Ofosu Towing Services',
-          price: 'GHS 400.00',
-        ),
-        _OrderItem(
-          serviceTitle: 'Water Delivery',
-          date: '24/09/2025',
-          originLocation: 'Delivery to',
-          destinationLocation: 'No.1 Ashongman Estates',
-          serviceProvider: 'Mr. Ansah & Sons',
-          price: 'GHS 250.00',
-        ),
-        _OrderItem(
-          serviceTitle: 'Towing Service',
-          date: '20/09/2025',
-          originLocation: 'Accra Newtown',
-          destinationLocation: 'Mr. Krabbs Mechanic Shop',
-          serviceProvider: 'Ofosu Towing Services',
-          price: 'GHS 400.00',
-        ),
-      ];
-
-  List<_OrderItem> _lastMonth() => [
-        _OrderItem(
-          serviceTitle: 'Towing Service',
-          date: '20/08/2025',
-          originLocation: 'Accra Newtown',
-          destinationLocation: 'Mr. Krabbs Mechanic Shop',
-          serviceProvider: 'Ofosu Towing Services',
-          price: 'GHS 400.00',
-        ),
-        _OrderItem(
-          serviceTitle: 'Water Delivery',
-          date: '24/08/2025',
-          originLocation: 'Delivery to',
-          destinationLocation: 'No.1 Ashongman Estates',
-          serviceProvider: 'Mr. Ansah & Sons',
-          price: 'GHS 250.00',
-        ),
-        _OrderItem(
-          serviceTitle: 'Towing Service',
-          date: '20/08/2025',
-          originLocation: 'Accra Newtown',
-          destinationLocation: 'Mr. Krabbs Mechanic Shop',
-          serviceProvider: 'Ofosu Towing Services',
-          price: 'GHS 400.00',
-        ),
-      ];
-}
-
-class _OrderItem {
-  final String serviceTitle;
-  final String date;
-  final String originLocation;
-  final String destinationLocation;
-  final String serviceProvider;
-  final String price;
-
-  _OrderItem({
-    required this.serviceTitle,
-    required this.date,
-    required this.originLocation,
-    required this.destinationLocation,
-    required this.serviceProvider,
-    required this.price,
-  });
 }

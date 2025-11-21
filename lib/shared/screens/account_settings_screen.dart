@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../utils/pages.dart';
 import '../../customer/core/app_export.dart';
@@ -7,19 +8,48 @@ import '../widgets/custom_bottom_nav_bar.dart';
 import '../../service_provider/widgets/sp_bottom_nav_bar.dart';
 import '../../service_provider/core/utils/nav_helper.dart';
 import '../../service_provider/widgets/provider_status_toggle.dart';
+import '../providers/api_service_provider.dart';
+import '../services/token_storage.dart';
 
-class AccountSettingsScreen extends StatefulWidget {
+class AccountSettingsScreen extends ConsumerStatefulWidget {
   final bool isProvider;
 
   const AccountSettingsScreen({super.key, this.isProvider = false});
 
   @override
-  State<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
+  ConsumerState<AccountSettingsScreen> createState() => _AccountSettingsScreenState();
 }
 
-class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
+class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
   int _currentNavIndex = 3;
   bool _isOnline = true;
+  String _name = 'Account User';
+  String _email = 'example@protz.com';
+  bool _pushEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final api = ref.read(apiServiceProvider);
+    final res = await api.getProfileMe();
+    if (!mounted) return;
+    if (res.success && res.data != null) {
+      final data = res.data!;
+      final first = (data['first_name'] ?? '').toString().trim();
+      final last = (data['last_name'] ?? '').toString().trim();
+      final name = [first, last].where((e) => e.isNotEmpty).join(' ').trim();
+      setState(() {
+        _name = name.isNotEmpty ? name : (data['email'] ?? _name).toString();
+        _email = (data['email'] ?? _email).toString();
+        _pushEnabled = data['push_notifications_enabled'] == true ? true : _pushEnabled;
+        _isOnline = data['is_available'] == true ? true : _isOnline;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +117,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                     setState(() => _currentNavIndex = index);
                     switch (index) {
                       case 0:
-                        context.go(AppRouteNames.customerHome);
+                        context.go(AppRoutes.customerHome);
                         break;
                       case 1:
                         context.push(AppRoutes.history);
@@ -134,8 +164,10 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           if (widget.isProvider)
             ProviderStatusToggle(
               isOnline: _isOnline,
-              onChanged: (value) {
+              onChanged: (value) async {
                 setState(() => _isOnline = value);
+                final api = ref.read(apiServiceProvider);
+                await api.patchUserMe({'is_available': value});
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(value ? 'Status: Online' : 'Status: Offline'),
@@ -178,19 +210,19 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  'Account User',
-                  style: TextStyle(
+                  _name,
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 4),
+                SizedBox(height: 4.h),
                 Text(
-                  'example@protz.com',
-                  style: TextStyle(
+                  _email,
+                  style: const TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 12,
                     color: Color(0xFF808080),
@@ -205,6 +237,7 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
               color: Color(0xFF086788),
             ),
             onPressed: () {
+              TokenStorage.instance.clearTokens();
               context.pushReplacementNamed(AppRouteNames.login);
             },
           ),
@@ -374,7 +407,14 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   ),
                 ),
               ),
-              Switch(value: true, onChanged: (val) {}),
+              Switch(
+                value: _pushEnabled,
+                onChanged: (val) async {
+                  setState(() => _pushEnabled = val);
+                  final api = ref.read(apiServiceProvider);
+                  await api.patchUserMe({'push_notifications_enabled': val});
+                },
+              ),
             ],
           ),
         ),

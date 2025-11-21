@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../customer/core/app_export.dart';
+import '../providers/api_service_provider.dart';
 
-class CustomerServiceChatScreen extends StatefulWidget {
+class CustomerServiceChatScreen extends ConsumerStatefulWidget {
   const CustomerServiceChatScreen({super.key});
 
   @override
-  State<CustomerServiceChatScreen> createState() => _CustomerServiceChatScreenState();
+  ConsumerState<CustomerServiceChatScreen> createState() => _CustomerServiceChatScreenState();
 }
 
-class _CustomerServiceChatScreenState extends State<CustomerServiceChatScreen> {
+class _CustomerServiceChatScreenState extends ConsumerState<CustomerServiceChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [
     ChatMessage(
@@ -25,17 +27,30 @@ class _CustomerServiceChatScreenState extends State<CustomerServiceChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
-    if (_messageController.text.trim().isNotEmpty) {
+  void _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+    final api = ref.read(apiServiceProvider);
+    // Attempt to send as support message; if backend lacks endpoint, fall back to local append
+    final res = await api.sendMessage(requestId: 'support', messageContent: text);
+    if (res.success) {
       setState(() {
         _messages.add(ChatMessage(
-          text: _messageController.text.trim(),
+          text: text,
           timestamp: "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'PM' : 'AM'} • Sent",
           isFromUser: true,
         ));
       });
-      _messageController.clear();
+    } else {
+      setState(() {
+        _messages.add(ChatMessage(
+          text: text,
+          timestamp: "${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')} ${DateTime.now().hour >= 12 ? 'PM' : 'AM'} • Sent",
+          isFromUser: true,
+        ));
+      });
     }
+    _messageController.clear();
   }
 
   @override
