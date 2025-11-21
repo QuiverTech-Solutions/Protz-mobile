@@ -1,9 +1,11 @@
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/gestures.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:protz/auth/models/register_request.dart';
+import '../../shared/providers/provider_onboarding_provider.dart';
 import '../widgets/phone_verification_dialog.dart';
 import '../services/new_auth_service.dart';
 import '../../shared/exceptions/auth_exceptions.dart';
@@ -11,7 +13,7 @@ import '../../shared/models/user.dart';
 import '../../shared/utils/error_handler.dart';
 import '../../shared/utils/pages.dart';
 
-class SignUpScreen extends StatefulWidget {
+class SignUpScreen extends ConsumerStatefulWidget {
   final String userType;
   
   const SignUpScreen({
@@ -23,7 +25,7 @@ class SignUpScreen extends StatefulWidget {
   _SignUpScreenState createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -226,9 +228,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
                               )
-                            : const Text(
-                                'Sign Up',
-                                style: TextStyle(
+                            : Text(
+                                widget.userType == 'service_provider' ? 'Next' : 'Sign Up',
+                                style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w400,
@@ -548,6 +550,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       developer.log('SignUpScreen: Creating RegisterRequest with firstName: $firstName, lastName: $lastName, userType: ${widget.userType}');
 
+      if (widget.userType == 'service_provider') {
+        ref.read(providerOnboardingProvider.notifier).setUserBasics(
+              firstName: firstName,
+              lastName: lastName,
+              phoneNumber: _phoneController.text.trim(),
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
+        context.go(AppRoutes.documents);
+        return;
+      }
+
       final registerRequest = RegisterRequest(
         firstName: firstName,
         lastName: lastName,
@@ -555,18 +569,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
         phoneNumber: _phoneController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
-        gender: 'male', // Default value, could be made configurable
-        profilePhotoUrl: 'https://example.com/default-avatar.png', // Default value
+        gender: 'male',
+        profilePhotoUrl: 'https://example.com/default-avatar.png',
       );
 
-      developer.log('SignUpScreen: RegisterRequest created: ${registerRequest.toJson()}');
-      developer.log('SignUpScreen: Calling AuthService.register()');
-
       final user = await _authService.register(registerRequest);
-
-      developer.log('SignUpScreen: Registration successful, user ID: ${user.id}');
-
-      // Registration successful, send OTP and show phone verification dialog
       if (mounted) {
         await _authService.sendOtp(phoneNumber: user.phoneNumber);
         _showPhoneVerificationDialog(user.phoneNumber);
@@ -617,7 +624,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
             if (userRole == UserRole.customer) {
               context.go(AppRoutes.customerHome);
             } else {
-              context.go(AppRoutes.providerHome);
+              context.go(AppRoutes.documents);
             }
           },
           onCancel: () {

@@ -8,7 +8,6 @@ import '../../shared/utils/pages.dart';
 import '../../shared/models/user.dart';
 import '../../shared/exceptions/auth_exceptions.dart';
 import '../../shared/utils/error_handler.dart';
-import '../models/login_request.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,9 +23,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final AuthService _authService = AuthService();
 
   bool _isLoading = false;
-  bool _isEmailLogin = false; // Default to phone login first
+  bool _isEmailLogin = false;
   bool _isPasswordVisible = false;
   String? _errorMessage;
+  UserRole? _loginAsRole;
 
   @override
   void dispose() {
@@ -43,7 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      String identifier = _isEmailLogin 
+      String identifier = _isEmailLogin
           ? _emailController.text.trim()
           : _phoneController.text.trim();
       String password = _passwordController.text.trim();
@@ -58,38 +58,38 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      developer.log('LoginScreen: Creating login request for identifier: $identifier');
-
-      // Create LoginRequest object
-      final loginRequest = LoginRequest(
-        username: identifier,
-        password: password,
-      );
-
-      developer.log('LoginScreen: Login request created: ${loginRequest.toJson()}');
-
-      // Format phone number if needed
-      String username = _isEmailLogin 
-          ? _emailController.text 
-          : _formatPhoneNumber(_phoneController.text);
-
-      // Call authentication service
-      final user = await _authService.login(
-        username: username,
-        password: _passwordController.text,
-      );
-
-      developer.log('LoginScreen: Login successful, user ID: ${user.id}');
-
-      // Send OTP for verification after successful login (2FA)
-      final otpPhone = _isEmailLogin 
-          ? _formatPhoneNumber(user.phoneNumber)
-          : _formatPhoneNumber(_phoneController.text);
-      await _authService.sendOtp(phoneNumber: otpPhone);
-
-      // Show OTP dialog; navigate on success inside the dialog
-      if (mounted) {
-        _showPhoneVerificationDialog(otpPhone);
+      if (_isEmailLogin) {
+        String username = _emailController.text;
+        final user = _loginAsRole == UserRole.serviceProvider
+            ? await _authService.loginServiceProvider(
+                username: username,
+                password: _passwordController.text,
+              )
+            : await _authService.login(
+                username: username,
+                password: _passwordController.text,
+              );
+        developer.log('LoginScreen: Login successful, user ID: ${user.id}');
+        if (_loginAsRole != null && user.role != _loginAsRole) {
+          setState(() {
+            _errorMessage = user.role == UserRole.serviceProvider
+                ? 'You are registered as a Service Provider. Please use "Login as Service Provider".'
+                : 'You are registered as a Customer. Please use "Login as Customer".';
+            _isLoading = false;
+          });
+          return;
+        }
+        final otpPhone = _formatPhoneNumber(user.phoneNumber);
+        await _authService.sendOtp(phoneNumber: otpPhone);
+        if (mounted) {
+          _showPhoneVerificationDialog(otpPhone);
+        }
+      } else {
+        final otpPhone = _formatPhoneNumber(_phoneController.text);
+        await _authService.sendOtp(phoneNumber: otpPhone);
+        if (mounted) {
+          _showPhoneVerificationDialog(otpPhone);
+        }
       }
     } on AuthException catch (e) {
       developer.log('LoginScreen: AuthException during login: ${e.message}');
@@ -154,8 +154,19 @@ class _LoginScreenState extends State<LoginScreen> {
         return PhoneVerificationDialog(
           phoneNumber: phoneNumber,
           onVerificationSuccess: () {
-            final userRole = _authService.currentUser?.role ?? UserRole.customer;
-            if (userRole == UserRole.customer) {
+            final actualRole = _authService.currentUser?.role ?? UserRole.customer;
+            if (_loginAsRole != null && actualRole != _loginAsRole) {
+              setState(() {
+                _errorMessage = actualRole == UserRole.serviceProvider
+                    ? 'You are registered as a Service Provider. Please use "Login as Service Provider".'
+                    : 'You are registered as a Customer. Please use "Login as Customer".';
+              });
+              Navigator.of(context).pop();
+              return;
+            }
+            final chosenRole = actualRole;
+            _loginAsRole = null;
+            if (chosenRole == UserRole.customer) {
               context.go(AppRoutes.customerHome);
             } else {
               context.go(AppRoutes.providerHome);
@@ -172,12 +183,13 @@ class _LoginScreenState extends State<LoginScreen> {
       return _isEmailLogin ? 'Email is required' : 'Phone number is required';
     }
     
-    if (password.isEmpty) {
-      return 'Password is required';
-    }
-    
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters';
+    if (_isEmailLogin) {
+      if (password.isEmpty) {
+        return 'Password is required';
+      }
+      if (password.length < 6) {
+        return 'Password must be at least 6 characters';
+      }
     }
     
     if (_isEmailLogin) {
@@ -254,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       
                       const SizedBox(height: 40),
                       
-                      // Toggle switch for email/phone login
+                      // Toggle switch for phone/email login
                       Container(
                         height: 40,
                         decoration: BoxDecoration(
@@ -269,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Active indicator
                             AnimatedPositioned(
                               duration: const Duration(milliseconds: 200),
-                              left: _isEmailLogin ? 0 : 172.5,
+                              left: !_isEmailLogin ? 0 : 172.5,
                               top: 0,
                               child: Container(
                                 width: 172.5,
@@ -291,30 +303,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   child: GestureDetector(
                                     onTap: () {
                                       setState(() {
-                                        _isEmailLogin = true;
-                                      });
-                                    },
-                                    child: Container(
-                                      height: 40,
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        'Login with email',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppins',
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400,
-                                          color: _isEmailLogin 
-                                              ? Colors.white 
-                                              : const Color(0xFF086788).withOpacity(0.5),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                Expanded(
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      setState(() {
                                         _isEmailLogin = false;
                                       });
                                     },
@@ -327,8 +315,32 @@ class _LoginScreenState extends State<LoginScreen> {
                                           fontFamily: 'Poppins',
                                           fontSize: 14,
                                           fontWeight: FontWeight.w400,
-                                          color: !_isEmailLogin 
-                                              ? Colors.white 
+                                          color: !_isEmailLogin
+                                              ? Colors.white
+                                              : const Color(0xFF086788).withOpacity(0.5),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        _isEmailLogin = true;
+                                      });
+                                    },
+                                    child: Container(
+                                      height: 40,
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        'Login with email',
+                                        style: TextStyle(
+                                          fontFamily: 'Poppins',
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400,
+                                          color: _isEmailLogin
+                                              ? Colors.white
                                               : const Color(0xFF086788).withOpacity(0.5),
                                         ),
                                       ),
@@ -352,7 +364,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _isEmailLogin ? '*Email' : '*Phone',
+                                _isEmailLogin ? '*Email' : '*Phone Number',
                                 style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 12,
@@ -384,7 +396,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   decoration: InputDecoration(
                                     hintText: _isEmailLogin 
                                         ? 'email@example.com' 
-                                        : '+1 234 567 8900',
+                                        : '0*********',
                                     hintStyle: const TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 12,
@@ -403,99 +415,77 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           
                           const SizedBox(height: 20),
-                          
-                          // Password field
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '*Password',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xFF1E1E1E),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Container(
-                                height: 48,
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: const Color(0xFF909090).withOpacity(0.5),
-                                  ),
-                                ),
-                                child: TextField(
-                                  controller: _passwordController,
-                                  obscureText: !_isPasswordVisible,
-                                  style: const TextStyle(
+                          if (_isEmailLogin)
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  '*Password',
+                                  style: TextStyle(
                                     fontFamily: 'Poppins',
                                     fontSize: 12,
                                     fontWeight: FontWeight.w400,
-                                    color: Color(0xFF505050),
+                                    color: Color(0xFF1E1E1E),
                                   ),
-                                  decoration: InputDecoration(
-                                    hintText: 'Enter your password',
-                                    hintStyle: const TextStyle(
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  height: 48,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFF909090).withOpacity(0.5),
+                                    ),
+                                  ),
+                                  child: TextField(
+                                    controller: _passwordController,
+                                    obscureText: !_isPasswordVisible,
+                                    style: const TextStyle(
                                       fontFamily: 'Poppins',
                                       fontSize: 12,
                                       fontWeight: FontWeight.w400,
                                       color: Color(0xFF505050),
                                     ),
-                                    border: InputBorder.none,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 10,
-                                    ),
-                                    suffixIcon: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _isPasswordVisible = !_isPasswordVisible;
-                                        });
-                                      },
-                                      child: Container(
-                                        width: 20,
-                                        height: 20,
-                                        margin: const EdgeInsets.all(14),
-                                        child: Icon(
-                                          _isPasswordVisible 
-                                              ? Icons.visibility 
-                                              : Icons.visibility_off,
-                                          size: 20,
-                                          color: const Color(0xFF505050),
+                                    decoration: InputDecoration(
+                                      hintText: 'Enter your password',
+                                      hintStyle: const TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: Color(0xFF505050),
+                                      ),
+                                      border: InputBorder.none,
+                                      contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                      suffixIcon: GestureDetector(
+                                        onTap: () {
+                                          setState(() {
+                                            _isPasswordVisible = !_isPasswordVisible;
+                                          });
+                                        },
+                                        child: Container(
+                                          width: 20,
+                                          height: 20,
+                                          margin: const EdgeInsets.all(14),
+                                          child: Icon(
+                                            _isPasswordVisible
+                                                ? Icons.visibility
+                                                : Icons.visibility_off,
+                                            size: 20,
+                                            color: const Color(0xFF505050),
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          ),
-                          
-                          const SizedBox(height: 10),
-                          
-                          // Forgot Password link
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: () {
-                                context.push(AppRoutes.forgotPassword);
-                              },
-                              child: const Text(
-                                'Forgot your Password?',
-                                style: TextStyle(
-                                  fontFamily: 'Poppins',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                  color: Color(0xFF086788),
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: Color(0xFF086788),
-                                ),
-                              ),
+                              ],
                             ),
-                          ),
+
+                          const SizedBox(height: 10),
                         ],
                       ),
                       
@@ -521,38 +511,85 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       
-                      // Login button
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          onPressed: _isLoading ? null : _handleLogin,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF086788),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: _isLoading
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Text(
-                                  'Login',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w400,
-                                    color: Colors.white,
-                                  ),
+                      // Login buttons
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () {
+                                      _loginAsRole = UserRole.customer;
+                                      _handleLogin();
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF086788),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                        ),
+                                elevation: 0,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Login as Customer',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton(
+                              onPressed: _isLoading
+                                  ? null
+                                  : () {
+                                      _loginAsRole = UserRole.serviceProvider;
+                                      _handleLogin();
+                                    },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF086788),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Login as Service Provider',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ],
                       ),
                       
                       const SizedBox(height: 24),
