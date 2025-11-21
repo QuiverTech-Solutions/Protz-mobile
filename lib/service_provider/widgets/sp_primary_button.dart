@@ -3,7 +3,7 @@ import '../core/app_export.dart';
 
 class SPPrimaryButton extends StatelessWidget {
   final String title;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
   final bool showTrailing;
 
   const SPPrimaryButton({
