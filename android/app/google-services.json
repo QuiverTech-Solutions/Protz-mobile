@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "299201820173",
+    "project_id": "protz-c2ba7",
+    "storage_bucket": "protz-c2ba7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:299201820173:android:c1f62959134038c6e94744",
+        "android_client_info": {
+          "package_name": "com.android.application"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDDnqBOMMbD5cBvvPPZAMJ0yG5lWP0wvLA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
