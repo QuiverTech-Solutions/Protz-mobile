@@ -117,7 +117,7 @@ final serviceAvailabilityProvider =
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef ServiceAvailabilityRef = AutoDisposeProviderRef<ServiceAvailability?>;
-String _$dashboardHash() => r'451ff6b8c22b501bfcd98b84db2323c4c0173e6a';
+String _$dashboardHash() => r'a0318887459ec3c31ac9a7effba1e3f5fdb177d7';
 
 /// Dashboard data provider with automatic refresh and error handling
 ///

@@ -67,7 +67,7 @@ final waterDeliveryProvidersProvider =
 // ignore: unused_element
 typedef WaterDeliveryProvidersRef
     = AutoDisposeFutureProviderRef<List<ServiceProvider>>;
-String _$serviceProvidersHash() => r'a2db63a25666262f8d631fe4ae6011d388867c0b';
+String _$serviceProvidersHash() => r'97d04c71a07a868e09b68129864ef71122c489f8';
 
 /// Service providers provider with location-based filtering
 ///
