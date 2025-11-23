@@ -50,8 +50,6 @@ app.*.map.json
 ios/Runner/Secrets.xcconfig
 .env
 .env.*
-**/*.keystore
-**/*.jks
 **/*.pem
 **/*.p12
 **/*.cer
