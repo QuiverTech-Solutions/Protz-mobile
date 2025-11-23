@@ -382,52 +382,47 @@ class AuthService {
   /// Get current user data
   /// GET /users/me
   Future<User> getMe() async {
-    try {
-      developer.log('AuthService: Fetching current user data');
-      developer.log('AuthService: GetMe endpoint: /users/me');
-
-      final response = await _dioClient.get<Map<String, dynamic>>('/users/me');
-
-      developer.log('AuthService: GetMe response received - Status: ${response.statusCode}');
-      developer.log('AuthService: GetMe response headers: ${response.headers}');
-
-      if (response.data == null) {
-        developer.log('AuthService: ERROR - GetMe response data is null');
-        throw const ServerException('Invalid response from server');
-      }
-
-      developer.log('AuthService: GetMe response data keys: ${response.data!.keys.toList()}');
-
-      final raw = response.data!;
-      final mapped = _mapProfileWithContextToUserJson(raw);
-      final user = User.fromJson(mapped);
-      developer.log('AuthService: User data parsed - ID: ${user.id}, Email: ${user.email}, Role: ${user.role}');
-      
-      // Update stored user data
-      _currentUser = user;
-      await _tokenStorage.saveUser(user);
-      _userController.add(_currentUser);
-
-      developer.log('AuthService: User data updated successfully in storage and stream');
-      return user;
-    } on DioException catch (e) {
-      developer.log('AuthService: DioException during getMe - Type: ${e.type}');
-      developer.log('AuthService: DioException message: ${e.message}');
-      developer.log('AuthService: DioException response status: ${e.response?.statusCode}');
-      developer.log('AuthService: DioException response data: ${e.response?.data}');
-      
-      if (e.response?.statusCode == 401) {
-        developer.log('AuthService: Unauthorized access - Token may be invalid');
-        throw const AuthException('Authentication required');
-      }
-      
-      throw ErrorHandler.handleDioError(e);
-    } catch (e, stackTrace) {
-      developer.log('AuthService: Unexpected error during getMe: $e');
-      developer.log('AuthService: GetMe error stack trace: $stackTrace');
-      throw ErrorHandler.handleGeneralError(e);
+  try {
+    developer.log('AuthService: Fetching current user data');
+    
+    // Change this line - remove the type parameter or use correct type
+    final response = await _dioClient.get('/users/me'); // Remove <Map<String,String>>
+    
+    developer.log('AuthService: GetMe response received - Status: ${response.statusCode}');
+    
+    if (response.data == null) {
+      developer.log('AuthService: ERROR - GetMe response data is null');
+      throw const ServerException('Invalid response from server');
     }
+    
+    // Parse as dynamic first, then cast appropriately
+    final Map<String, dynamic> raw = response.data as Map<String, dynamic>;
+    final mapped = _mapProfileWithContextToUserJson(raw);
+    final user = User.fromJson(mapped);
+    
+    developer.log('AuthService: User data parsed - ID: ${user.id}');
+    
+    // Update stored user data
+    _currentUser = user;
+    await _tokenStorage.saveUser(user);
+    _userController.add(_currentUser);
+    
+    return user;
+  } on DioException catch (e) {
+    developer.log('AuthService: DioException during getMe - Type: ${e.type}');
+    developer.log('AuthService: DioException response data: ${e.response?.data}');
+    
+    if (e.response?.statusCode == 401) {
+      throw const AuthException('Authentication required');
+    }
+    
+    throw ErrorHandler.handleDioError(e);
+  } catch (e, stackTrace) {
+    developer.log('AuthService: Unexpected error during getMe: $e');
+    developer.log('Stack trace: $stackTrace');
+    throw ErrorHandler.handleGeneralError(e);
   }
+}
 
   /// Update current user data
   /// PATCH /users/me
