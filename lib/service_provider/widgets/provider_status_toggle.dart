@@ -17,14 +17,15 @@ class ProviderStatusToggle extends ConsumerStatefulWidget {
 }
 
 class _ProviderStatusToggleState extends ConsumerState<ProviderStatusToggle> {
-  late bool _isOnline;
   bool _isBusy = false;
 
   @override
   void initState() {
     super.initState();
-    _isOnline = widget.initialOnline ?? false;
     Future.microtask(_fetchInitial);
+    if (widget.initialOnline != null) {
+      ref.read(onlineStatusProvider.notifier).state = widget.initialOnline!;
+    }
   }
 
   Future<void> _fetchInitial() async {
@@ -35,14 +36,15 @@ class _ProviderStatusToggleState extends ConsumerState<ProviderStatusToggle> {
       final data = profile.data ?? const <String, dynamic>{};
       final bool available = data['is_available'] == true;
       final bool online = data['is_online'] == true;
-      setState(() => _isOnline = available || online);
+      ref.read(onlineStatusProvider.notifier).state = available || online;
     }
     setState(() => _isBusy = false);
   }
 
   Future<void> _toggle() async {
     if (_isBusy) return;
-    final newValue = !_isOnline;
+    final current = ref.read(onlineStatusProvider);
+    final newValue = !current;
 
     final api = ref.read(apiServiceProvider);
 
@@ -69,7 +71,7 @@ class _ProviderStatusToggleState extends ConsumerState<ProviderStatusToggle> {
     setState(() => _isBusy = true);
     final res = await api.toggleMyAvailability(isAvailable: newValue);
     if (res.success) {
-      setState(() => _isOnline = newValue);
+      ref.read(onlineStatusProvider.notifier).state = newValue;
       ref.read(dashboardProvider.notifier).refresh();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -90,11 +92,12 @@ class _ProviderStatusToggleState extends ConsumerState<ProviderStatusToggle> {
     const Color onlineBorder = Color.fromRGBO(0, 159, 34, 0.5);
     const Color offlineBorder = Color.fromRGBO(227, 12, 0, 0.5);
 
-    final String onlineIconUrl = _isOnline
+    final bool isOnline = ref.watch(onlineStatusProvider);
+    final String onlineIconUrl = isOnline
         ? 'assets/images/material-symbols_online-prediction-rounded.svg'
         : 'assets/images/offine_icon.svg';
 
-    final Color borderColor = _isOnline ? onlineBorder : offlineBorder;
+    final Color borderColor = isOnline ? onlineBorder : offlineBorder;
 
     return SizedBox(
       width: 40.h,
@@ -111,12 +114,18 @@ class _ProviderStatusToggleState extends ConsumerState<ProviderStatusToggle> {
           child: Padding(
             padding: EdgeInsets.all(12.h),
             child: Center(
-              child: CustomImageView(
-                imagePath: onlineIconUrl,
-                height: 24.h,
-                width: 24.h,
-                fit: BoxFit.contain,
-              ),
+              child: _isBusy
+                  ? SizedBox(
+                      height: 20.h,
+                      width: 20.h,
+                      child: const CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : CustomImageView(
+                      imagePath: onlineIconUrl,
+                      height: 24.h,
+                      width: 24.h,
+                      fit: BoxFit.contain,
+                    ),
             ),
           ),
         ),
