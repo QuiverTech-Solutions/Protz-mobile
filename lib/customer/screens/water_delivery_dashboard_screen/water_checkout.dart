@@ -23,6 +23,7 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
   late Map<String, dynamic> data;
   int selectedOptionIndex = -1;
   GoogleMapController? _mapController;
+  bool _providersRequested = false;
   static const CameraPosition _initialCamera = CameraPosition(
     target: LatLng(AppConstants.defaultLatitude, AppConstants.defaultLongitude),
     zoom: 12.5,
@@ -137,13 +138,16 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
                           final providersState = ref.watch(serviceProvidersProvider);
                           final waterType = ref.watch(waterServiceTypeProvider);
                           final waterTypeId = waterType?.id;
-                          if (waterTypeId != null && !providersState.isLoading && providersState.providers.isEmpty) {
-                            ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
-                              serviceTypeId: waterTypeId,
-                              latitude: AppConstants.defaultLatitude,
-                              longitude: AppConstants.defaultLongitude,
-                              limit: 20,
-                            );
+                          if (!_providersRequested && waterTypeId != null && !providersState.isLoading && providersState.providers.isEmpty) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
+                                serviceTypeId: waterTypeId,
+                                latitude: AppConstants.defaultLatitude,
+                                longitude: AppConstants.defaultLongitude,
+                                limit: 20,
+                              );
+                              _providersRequested = true;
+                            });
                           }
                           if (providersState.isLoading) {
                             return const Center(child: CircularProgressIndicator());

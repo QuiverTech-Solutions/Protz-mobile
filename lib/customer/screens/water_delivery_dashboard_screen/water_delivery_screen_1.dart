@@ -34,24 +34,7 @@ class _WaterDeliveryScreen1State extends State<WaterDeliveryScreen1> {
     zoom: 14.0,
   );
 
-  // Sample markers
-  final Set<Marker> _markers = {
-    Marker(
-      markerId: const MarkerId('church'),
-      position: const LatLng(5.6100, -0.1950),
-      infoWindow: const InfoWindow(title: "St. Paul's Roman Catholic Church"),
-    ),
-    Marker(
-      markerId: const MarkerId('salon'),
-      position: const LatLng(5.5980, -0.1800),
-      infoWindow: const InfoWindow(title: "Jenni's Hair Salon"),
-    ),
-    Marker(
-      markerId: const MarkerId('institute'),
-      position: const LatLng(5.5900, -0.1920),
-      infoWindow: const InfoWindow(title: "Accra Institute of Technology"),
-    ),
-  };
+  final Set<Marker> _markers = {};
 
   @override
   void dispose() {
@@ -389,8 +372,18 @@ class _WaterDeliveryScreen1State extends State<WaterDeliveryScreen1> {
 
   void _updateMapToSelected() {
     if (_mapController == null || _selectedLat == null || _selectedLng == null) return;
+    final pos = LatLng(_selectedLat!, _selectedLng!);
+    setState(() {
+      _markers
+        ..clear()
+        ..add(Marker(
+          markerId: const MarkerId('destination'),
+          position: pos,
+          infoWindow: InfoWindow(title: _destinationController.text.trim().isNotEmpty ? _destinationController.text.trim() : 'Destination'),
+        ));
+    });
     _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-      target: LatLng(_selectedLat!, _selectedLng!),
+      target: pos,
       zoom: 15,
     )));
   }
