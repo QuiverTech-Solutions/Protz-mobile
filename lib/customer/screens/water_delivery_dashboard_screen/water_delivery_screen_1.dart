@@ -4,7 +4,6 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../shared/utils/env.dart';
-import '../../core/utils/size_utils.dart';
 import '../../../shared/widgets/custom_sliver_app_bar.dart';
 import '../../../shared/utils/pages.dart';
 
@@ -251,21 +250,6 @@ class _WaterDeliveryScreen1State extends State<WaterDeliveryScreen1> {
     );
   }
 
-  Widget _buildHomeIndicator() {
-    return SizedBox(
-      height: SizeUtils.height * 0.04,
-      child: Center(
-        child: Container(
-          width: SizeUtils.width * 0.35,
-          height: 4,
-          decoration: BoxDecoration(
-            color: const Color(0xFF1C1C1E),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-      ),
-    );
-  }
 
   void _onQueryChanged(String q) {
     _debounce?.cancel();

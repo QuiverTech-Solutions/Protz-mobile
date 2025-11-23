@@ -7,8 +7,6 @@ import '../../../shared/providers/api_service_provider.dart';
 import '../../../shared/providers/service_types_provider.dart';
 import '../../../shared/providers/service_providers_provider.dart';
 import '../../../shared/utils/app_constants.dart';
-import '../towing_services_dashboard_screen/widgets/checkout_actions.dart';
-import '../../../shared/widgets/notifications_icon_button.dart';
 import '../towing_services_dashboard_screen/widgets/towtruck_entry.dart';
 
 class WaterCheckout extends ConsumerStatefulWidget {
@@ -214,61 +212,8 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
     );
   }
 
-  Widget _header(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-      child: Row(
-        children: [
-          InkWell(
-          onTap: () {
-            final pickup = Uri.encodeComponent('${data['pickupLocation'] ?? ''}');
-            final dest = Uri.encodeComponent('${data['destination'] ?? ''}');
-            final lat = (data['destinationLat'] ?? '').toString();
-            final lng = (data['destinationLng'] ?? '').toString();
-            final hasCoords = lat.isNotEmpty && lng.isNotEmpty;
-            final baseUrl = '${AppRoutes.waterDeliveryScreen2}?pickupLocation=$pickup&destination=$dest';
-            final withCoords = hasCoords
-                ? '$baseUrl&destinationLat=${Uri.encodeComponent(lat)}&destinationLng=${Uri.encodeComponent(lng)}'
-                : baseUrl;
-            context.go(withCoords);
-          },
-            child: const Icon(Icons.arrow_back, color: Color(0xFF086788)),
-          ),
-          const SizedBox(width: 6),
-          const Text('Water Delivery', style: TextStyle(color: Color(0xFF1B7B8C), fontSize: 20, fontWeight: FontWeight.w600)),
-          const Spacer(),
-          const NotificationsIconButton(),
-        ],
-      ),
-    );
-  }
 
-  Widget _summaryChips() {
-    return Row(
-      children: [
-        Expanded(child: _chip('To', (data['destination'] ?? '').toString())),
-        const SizedBox(width: 8),
-        Expanded(child: _chip('Quantity', '${data['quantity'] ?? '0'} Gallons')),
-      ],
-    );
-  }
 
-  Widget _chip(String label, String value) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: Row(
-        children: [
-          Text('$label: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-          Expanded(child: Text(value, style: const TextStyle(color: Colors.black87, fontSize: 12))),
-        ],
-      ),
-    );
-  }
 
   Widget _proceedButton(WidgetRef ref) {
     return SizedBox(
