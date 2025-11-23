@@ -163,18 +163,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
           ),
           if (widget.isProvider)
             ProviderStatusToggle(
-              isOnline: _isOnline,
-              onChanged: (value) async {
-                setState(() => _isOnline = value);
-                final api = ref.read(apiServiceProvider);
-                await api.patchUserMe({'is_available': value});
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(value ? 'Status: Online' : 'Status: Offline'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              },
+             
             )
           else
             IconButton(

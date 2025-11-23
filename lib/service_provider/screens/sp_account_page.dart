@@ -12,6 +12,7 @@ import '../widgets/earnings_summary_card.dart';
 import 'package:protz/shared/providers/dashboard_provider.dart';
 import 'package:protz/shared/widgets/dashboard_wallet_card.dart';
 import 'package:protz/shared/models/dashboard_data.dart';
+import 'package:protz/shared/providers/api_service_provider.dart';
 import '../widgets/achievement_tile.dart';
 
 class SPAccountPage extends StatefulWidget {
@@ -220,19 +221,7 @@ class _SPAccountPageState extends State<SPAccountPage> {
                 child: const Icon(Icons.notifications),
               ),
               SizedBox(width: ResponsiveExtension(12).h),
-              ProviderStatusToggle(
-                isOnline: _isOnline,
-                onChanged: (value) {
-                  setState(() => _isOnline = value);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text(value ? 'Status: Online' : 'Status: Offline'),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
-              ),
+              ProviderStatusToggle(),
             ],
           ),
         ],
@@ -265,15 +254,18 @@ class _SPAccountPageState extends State<SPAccountPage> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      'Fabrizio Trucks',
+                    Consumer(builder: (context, ref, _) {
+                      final user = ref.watch(userInfoProvider);
+                      return Text(
+                      user?.name ?? 'Your Account',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: ResponsiveExtension(18).fSize,
                         fontWeight: FontWeight.w500,
                         color: appTheme.white_A700,
                       ),
-                    ),
+                    );
+                    }),
                     SizedBox(width: ResponsiveExtension(4).h),
                     Icon(Icons.verified,
                         color: appTheme.white_A700,
@@ -297,14 +289,18 @@ class _SPAccountPageState extends State<SPAccountPage> {
                           const Icon(Icons.star,
                               size: 16, color: Color(0xFF1E1E1E)),
                           SizedBox(width: ResponsiveExtension(4).h),
-                          Text(
-                            '4.5',
+                          Consumer(builder: (context, ref, _) {
+                            final dashboard = ref.watch(dashboardProvider);
+                            final rating = (dashboard.data?.user?.isVerified ?? false) ? '4.5' : '4.0';
+                            return Text(
+                            rating,
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               fontSize: ResponsiveExtension(12).fSize,
                               color: const Color(0xFF1E1E1E),
                             ),
-                          ),
+                          );
+                          }),
                         ],
                       ),
                     ),

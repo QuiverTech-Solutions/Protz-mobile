@@ -6,6 +6,8 @@ import '../../../shared/widgets/custom_button.dart';
 import '../../../shared/widgets/custom_image_view.dart';
 import '../../core/app_export.dart';
 import '../../../shared/models/service_request.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:protz/shared/providers/api_service_provider.dart';
 
 class SPOrderRequestDetails extends StatelessWidget {
   const SPOrderRequestDetails({super.key, required this.request});
@@ -57,31 +59,43 @@ class SPOrderRequestDetails extends StatelessWidget {
                     padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h),
                     child: Row(
                       children: [
-                        Expanded(
-                          child: CustomButton(
-                            text: 'Decline',
-                            backgroundColor: appTheme.white_A700,
-                            textColor: appTheme.gray_900,
-                            borderColor: const Color(0xFF909090),
-                            onPressed: () { Navigator.of(context).maybePop(); },
-                            height: ResponsiveExtension(48).h,
-                            isFullWidth: true,
-                            borderRadius: ResponsiveExtension(12).h,
-                          ),
-                        ),
+                        Consumer(builder: (context, ref, _) {
+                          return Expanded(
+                            child: CustomButton(
+                              text: 'Decline',
+                              backgroundColor: appTheme.white_A700,
+                              textColor: appTheme.gray_900,
+                              borderColor: const Color(0xFF909090),
+                              onPressed: () async {
+                                final api = ref.read(apiServiceProvider);
+                                await api.cancelServiceRequest(request.id);
+                                Navigator.of(context).maybePop();
+                              },
+                              height: ResponsiveExtension(48).h,
+                              isFullWidth: true,
+                              borderRadius: ResponsiveExtension(12).h,
+                            ),
+                          );
+                        }),
                         SizedBox(width: ResponsiveExtension(10).h),
-                        Expanded(
-                          child: CustomButton(
-                            text: 'Accept',
-                            backgroundColor: appTheme.light_blue_900,
-                            textColor: appTheme.white_A700,
-                            borderColor: appTheme.light_blue_900,
-                            onPressed: () { context.push(AppRoutes.jobRequests); },
-                            height: ResponsiveExtension(48).h,
-                            isFullWidth: true,
-                            borderRadius: ResponsiveExtension(12).h,
-                          ),
-                        ),
+                        Consumer(builder: (context, ref, _) {
+                          return Expanded(
+                            child: CustomButton(
+                              text: 'Accept',
+                              backgroundColor: appTheme.light_blue_900,
+                              textColor: appTheme.white_A700,
+                              borderColor: appTheme.light_blue_900,
+                              onPressed: () async {
+                                final api = ref.read(apiServiceProvider);
+                                await api.updateRequestStatus(requestId: request.id, status: 'in_progress');
+                                context.push(AppRoutes.jobRequests);
+                              },
+                              height: ResponsiveExtension(48).h,
+                              isFullWidth: true,
+                              borderRadius: ResponsiveExtension(12).h,
+                            ),
+                          );
+                        }),
                       ],
                     ),
                   ),

@@ -16,9 +16,10 @@ import '../../../shared/models/service_provider.dart';
 import '../../../customer/core/utils/size_utils.dart' as cus_size;
 import '../../widgets/provider_status_toggle.dart';
 import '../../core/utils/nav_helper.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:protz/shared/providers/dashboard_provider.dart';
+import 'package:protz/shared/providers/api_service_provider.dart';
 //
-
-
 
 enum ServiceType { towing, water }
 
@@ -31,12 +32,10 @@ class SpTowingHome extends StatefulWidget {
   final ServiceType initialService;
 
   @override
-  State<SpTowingHome> createState() =>
-      _SpTowingHomeState();
+  State<SpTowingHome> createState() => _SpTowingHomeState();
 }
 
-class _SpTowingHomeState
-    extends State<SpTowingHome> {
+class _SpTowingHomeState extends State<SpTowingHome> {
   final int _currentNavIndex = 0;
 
   late ServiceType _selectedService;
@@ -50,7 +49,6 @@ class _SpTowingHomeState
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
       backgroundColor: appTheme.light_blue_50,
       body: SafeArea(
@@ -61,7 +59,8 @@ class _SpTowingHomeState
                 Expanded(
                   child: Container(
                     width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: ResponsiveExtension(16).h),
                     child: Column(
                       children: [
                         //_buildTabSection(),
@@ -142,11 +141,14 @@ class _SpTowingHomeState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Welcome, Iyad',
-                textAlign: TextAlign.left,
-                style: TextStyleHelper.instance.title18MediumPoppins,
-              ),
+              Consumer(builder: (context, ref, _) {
+                final user = ref.watch(userInfoProvider);
+                return Text(
+                  'Welcome, ${user?.name}',
+                  textAlign: TextAlign.left,
+                  style: TextStyleHelper.instance.title18MediumPoppins,
+                );
+              }),
               Text(
                 'Let’s do some deliveries today!',
                 style: TextStyleHelper.instance.body12RegularPoppins,
@@ -158,22 +160,11 @@ class _SpTowingHomeState
         IconButton(
           icon: Icon(Icons.notifications),
           padding: EdgeInsets.only(left: ResponsiveExtension(12).h),
-          onPressed: () {context.push(AppRoutes.notifications);},
-        ),
-        ProviderStatusToggle(
-          isOnline: _isOnline,
-          onChanged: (value) {
-            setState(() {
-              _isOnline = value;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(value ? 'Status: Online' : 'Status: Offline'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
+          onPressed: () {
+            context.push(AppRoutes.notifications);
           },
         ),
+        ProviderStatusToggle(),
       ],
     );
   }
@@ -182,9 +173,28 @@ class _SpTowingHomeState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatsRow(),
+        Consumer(builder: (context, ref, _) {
+          final stats = ref.watch(dashboardProvider).data?.stats;
+          final todayDeliveries = stats?.activeOrders ?? 0;
+          final todayEarnings = 0; // derive via payments if needed
+          final totalEarnings = (stats?.totalSpent ?? 0).round();
+          return Row(
+            spacing: ResponsiveExtension(12).h,
+            children: [
+              Expanded(
+                  child:
+                      _buildMetricCard(todayDeliveries, 'Today’s Deliveries')),
+              Expanded(
+                  child: _buildMetricCard(todayEarnings, 'Today’s Earnings',
+                      money: true)),
+              Expanded(
+                  child: _buildMetricCard(totalEarnings, 'Total Earnings',
+                      money: true)),
+            ],
+          );
+        }),
         SizedBox(height: ResponsiveExtension(12).h),
-        _buildPreviewPopupButton(),
+        //_buildPreviewPopupButton(),
         SizedBox(height: ResponsiveExtension(20).h),
         _emergencyContactButton(),
         _buildRecentOrdersSection(),
@@ -192,18 +202,7 @@ class _SpTowingHomeState
     );
   }
 
-  Widget _buildStatsRow() {
-    return Row(
-      spacing: ResponsiveExtension(12).h,
-      children: [
-        Expanded(child: _buildMetricCard(3, 'Today’s Deliveries')),
-        Expanded(child: _buildMetricCard(1, 'Today’s Earnings',money: true)),
-        Expanded(child: _buildMetricCard(5, 'Total Earnings',money: true)),
-      ],
-    );
-  }
-
-  Widget _buildMetricCard(int amount, String label,{ bool money =false}) {
+  Widget _buildMetricCard(int amount, String label, {bool money = false}) {
     return Container(
       height: ResponsiveExtension(140).h,
       padding: EdgeInsets.symmetric(
@@ -222,14 +221,19 @@ class _SpTowingHomeState
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          money? Text("GHS", style: TextStyle(),):Container(),
+          money
+              ? Text(
+                  "GHS",
+                  style: TextStyle(),
+                )
+              : Container(),
           Text(
             '$amount',
             textAlign: TextAlign.center,
-            style:  TextStyleHelper.instance.title20RegularRoboto.copyWith(
+            style: TextStyleHelper.instance.title20RegularRoboto.copyWith(
               color: appTheme.light_blue_900,
               fontWeight: FontWeight.bold,
-           ),
+            ),
           ),
           SizedBox(height: ResponsiveExtension(8).h),
           Container(
@@ -241,9 +245,8 @@ class _SpTowingHomeState
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyleHelper.instance.body12RegularPoppins.copyWith(
-              fontSize: 12
-            ),
+            style: TextStyleHelper.instance.body12RegularPoppins
+                .copyWith(fontSize: 12),
           ),
         ],
       ),
@@ -279,7 +282,9 @@ class _SpTowingHomeState
             borderRadius: BorderRadius.circular(ResponsiveExtension(24).h),
           ),
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(24).h),
+            padding: EdgeInsets.symmetric(
+                horizontal: ResponsiveExtension(16).h,
+                vertical: ResponsiveExtension(24).h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,7 +324,8 @@ class _SpTowingHomeState
                           height: ResponsiveExtension(40).h,
                           width: ResponsiveExtension(40).h,
                           fit: BoxFit.cover,
-                          radius: BorderRadius.circular(ResponsiveExtension(20).h),
+                          radius:
+                              BorderRadius.circular(ResponsiveExtension(20).h),
                         ),
                         SizedBox(width: ResponsiveExtension(12).h),
                         Column(
@@ -364,13 +370,16 @@ class _SpTowingHomeState
                     Container(
                       decoration: BoxDecoration(
                         color: appTheme.light_blue_900,
-                        borderRadius: BorderRadius.circular(ResponsiveExtension(8).h),
+                        borderRadius:
+                            BorderRadius.circular(ResponsiveExtension(8).h),
                       ),
                       child: Row(
                         children: [
                           Padding(
                             padding: EdgeInsets.all(ResponsiveExtension(11).h),
-                            child: Icon(Icons.phone, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
+                            child: Icon(Icons.phone,
+                                color: appTheme.white_A700,
+                                size: ResponsiveExtension(24).h),
                           ),
                           Container(
                             height: ResponsiveExtension(24).h,
@@ -379,7 +388,9 @@ class _SpTowingHomeState
                           ),
                           Padding(
                             padding: EdgeInsets.all(ResponsiveExtension(11).h),
-                            child: Icon(Icons.chat_bubble_outline, color: appTheme.white_A700, size: ResponsiveExtension(24).h),
+                            child: Icon(Icons.chat_bubble_outline,
+                                color: appTheme.white_A700,
+                                size: ResponsiveExtension(24).h),
                           ),
                         ],
                       ),
@@ -436,10 +447,13 @@ class _SpTowingHomeState
                         children: [
                           Container(
                             height: ResponsiveExtension(48).h,
-                            padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(10).h),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: ResponsiveExtension(16).h,
+                                vertical: ResponsiveExtension(10).h),
                             decoration: BoxDecoration(
                               color: appTheme.light_blue_50,
-                              borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                              borderRadius: BorderRadius.circular(
+                                  ResponsiveExtension(12).h),
                             ),
                             child: Align(
                               alignment: Alignment.centerLeft,
@@ -457,15 +471,19 @@ class _SpTowingHomeState
                           SizedBox(height: ResponsiveExtension(12).h),
                           Container(
                             height: ResponsiveExtension(48).h,
-                            padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(10).h),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: ResponsiveExtension(16).h,
+                                vertical: ResponsiveExtension(10).h),
                             decoration: BoxDecoration(
                               color: appTheme.light_blue_50,
-                              borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                              borderRadius: BorderRadius.circular(
+                                  ResponsiveExtension(12).h),
                             ),
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: Text(
-                                request.destinationLocation?.address ?? 'Mr. Krabbs Mechanic Shop, Danfa',
+                                request.destinationLocation?.address ??
+                                    'Mr. Krabbs Mechanic Shop, Danfa',
                                 style: TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: ResponsiveExtension(12).fSize,
@@ -515,11 +533,14 @@ class _SpTowingHomeState
                     ),
                     Container(
                       height: ResponsiveExtension(40).h,
-                      padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(16).h, vertical: ResponsiveExtension(10).h),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: ResponsiveExtension(16).h,
+                          vertical: ResponsiveExtension(10).h),
                       decoration: BoxDecoration(
                         color: const Color(0x1AE30C00),
                         border: Border.all(color: const Color(0x33E30C00)),
-                        borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
+                        borderRadius:
+                            BorderRadius.circular(ResponsiveExtension(12).h),
                       ),
                       child: Center(
                         child: Text(
@@ -544,7 +565,9 @@ class _SpTowingHomeState
                         backgroundColor: appTheme.white_A700,
                         textColor: appTheme.gray_900,
                         borderColor: const Color(0xFF909090),
-                        onPressed: () { Navigator.of(ctx).pop(); },
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                        },
                         isFullWidth: true,
                       ),
                     ),
@@ -555,8 +578,13 @@ class _SpTowingHomeState
                         backgroundColor: appTheme.light_blue_900,
                         textColor: appTheme.white_A700,
                         borderColor: appTheme.light_blue_900,
-                        onPressed: () { Navigator.of(ctx).pop(); context.pushNamed(AppRouteNames.providerOrderRequestDetails, extra: request); },
-                         isFullWidth: true,
+                        onPressed: () {
+                          Navigator.of(ctx).pop();
+                          context.pushNamed(
+                              AppRouteNames.providerOrderRequestDetails,
+                              extra: request);
+                        },
+                        isFullWidth: true,
                       ),
                     ),
                   ],
@@ -575,7 +603,9 @@ class _SpTowingHomeState
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(horizontal: ResponsiveExtension(12).h, vertical: ResponsiveExtension(20).h),
+      padding: EdgeInsets.symmetric(
+          horizontal: ResponsiveExtension(12).h,
+          vertical: ResponsiveExtension(20).h),
       decoration: BoxDecoration(
         color: appTheme.white_A700,
         border: Border.all(
@@ -605,14 +635,16 @@ class _SpTowingHomeState
       ),
     );
   }
+
   Widget _buildRecentOrdersSection() {
-    final orders = _placeholderRecentOrders();
-    // Initialize the customer SizeUtils via its Sizer to ensure responsive units work
-    return cus_size.Sizer(
-      builder: (context, orientation, deviceType) {
-        return DashboardRecentOrders(recentOrders: orders);
-      },
-    );
+    return Consumer(builder: (context, ref, _) {
+      final orders = ref.watch(recentOrdersProvider);
+      return cus_size.Sizer(
+        builder: (context, orientation, deviceType) {
+          return DashboardRecentOrders(recentOrders: orders);
+        },
+      );
+    });
   }
 
   List<ServiceRequest> _placeholderRecentOrders() {
@@ -653,9 +685,8 @@ class _SpTowingHomeState
         serviceType: serviceTitle,
         status: ServiceRequestStatus.completed,
         customerId: 'customer_demo',
-        assignedProvider: providerName == null
-            ? null
-            : provider(providerName, serviceTitle),
+        assignedProvider:
+            providerName == null ? null : provider(providerName, serviceTitle),
         pickupLocation: LocationDetails(
           address: origin,
           latitude: 0.0,

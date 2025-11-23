@@ -8,6 +8,9 @@ import '../widgets/provider_status_toggle.dart';
 import 'package:protz/shared/widgets/dashboard_wallet_card.dart';
 import 'package:protz/shared/models/dashboard_data.dart';
 import 'package:protz/customer/core/utils/size_utils.dart' as cus_size;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:protz/shared/providers/api_service_provider.dart';
+import 'package:protz/shared/providers/dashboard_provider.dart';
 
 
 class SPFinancesScreen extends StatefulWidget {
@@ -40,13 +43,34 @@ class _SPFinancesScreenState extends State<SPFinancesScreen> {
                       children: [
                         _buildHeader(context),
                         SizedBox(height: ResponsiveExtension(16).h),
-                        SPEarningsSummaryCard(
-                          currency: 'GHS',
-                          totalDisplay: '35,040',
-                          todayDisplay: '1,240',
-                          weekDisplay: '5,230',
-                          monthDisplay: '10,500',
-                        ),
+                        Consumer(builder: (context, ref, _) {
+                          final api = ref.read(apiServiceProvider);
+                          return FutureBuilder(
+                            future: Future.wait([
+                              api.getRecentPayments(limit: 50),
+                              api.getRecentPayments(limit: 60),
+                              api.getRecentPayments(limit: 100 ),
+                            ]),
+                            builder: (context, snapshot) {
+                              double today = 0, week = 0, month = 0;
+                              if (snapshot.hasData) {
+                                final res = snapshot.data as List<dynamic>;
+                                today = _sumAmounts(res[0]);
+                                week = _sumAmounts(res[1]);
+                                month = _sumAmounts(res[2]);
+                              }
+                              final total = month; // simple total proxy
+                              final currency = ref.watch(walletInfoProvider)?.currency ?? 'GHS';
+                              return SPEarningsSummaryCard(
+                                currency: currency,
+                                totalDisplay: total.toStringAsFixed(0),
+                                todayDisplay: today.toStringAsFixed(0),
+                                weekDisplay: week.toStringAsFixed(0),
+                                monthDisplay: month.toStringAsFixed(0),
+                              );
+                            },
+                          );
+                        }),
                         SizedBox(height: ResponsiveExtension(16).h),
                         _buildWalletCard(),
                         SizedBox(height: ResponsiveExtension(24).h),
@@ -143,20 +167,7 @@ class _SPFinancesScreenState extends State<SPFinancesScreen> {
               ),
             ),
             SizedBox(width: ResponsiveExtension(12).h),
-            ProviderStatusToggle(
-              isOnline: _isOnline,
-              onChanged: (value) {
-                setState(() {
-                  _isOnline = value;
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(value ? 'Status: Online' : 'Status: Offline'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              },
-            ),
+            ProviderStatusToggle(),
           ],
         ),
       ],
@@ -166,38 +177,21 @@ class _SPFinancesScreenState extends State<SPFinancesScreen> {
   
 
   Widget _buildWalletCard() {
-    final walletInfo = WalletInfo(
-      balance: 800.50,
-      currency: 'GHS',
-      recentTransactions: [
-        Transaction(
-          id: 't1',
-          amount: 200.00,
-          type: 'debit',
-          description: 'Withdrawal to Bank',
-          createdAt: DateTime.now().subtract(const Duration(days: 1)),
-        ),
-        Transaction(
-          id: 't2',
-          amount: 500.00,
-          type: 'credit',
-          description: 'Top up',
-          createdAt: DateTime.now().subtract(const Duration(days: 2)),
-        ),
-      ],
-      isActive: true,
-    );
-
-    return cus_size.Sizer(
-      builder: (context, orientation, deviceType) {
-        return DashboardWalletCard(
-          walletInfo: walletInfo,
-          accountOwnerName: 'Fabrizio Trucks',
-          serviceLabel: 'Towing Service',
-          onWithdraw: () {},
-        );
-      },
-    );
+    return Consumer(builder: (context, ref, _) {
+      final walletInfo = ref.watch(walletInfoProvider);
+      final user = ref.watch(userInfoProvider);
+      final info = walletInfo ?? WalletInfo(balance: 0, currency: 'GHS', recentTransactions: const [], isActive: false);
+      return cus_size.Sizer(
+        builder: (context, orientation, deviceType) {
+          return DashboardWalletCard(
+            walletInfo: info,
+            accountOwnerName: user?.name,
+            serviceLabel: 'Provider',
+            onWithdraw: () {},
+          );
+        },
+      );
+    });
   }
 
   
@@ -225,5 +219,20 @@ class _SPFinancesScreenState extends State<SPFinancesScreen> {
         createdAt: DateTime.now().subtract(const Duration(days: 3)),
       ),
     ];
+  }
+
+  double _sumAmounts(dynamic apiRes) {
+    if (apiRes == null) return 0;
+    try {
+      final data = (apiRes as dynamic).data as List<dynamic>?;
+      if (data == null) return 0;
+      return data.fold<double>(0, (sum, e) {
+        final amt = (e as Map<String, dynamic>)['amount'];
+        if (amt is num) return sum + amt.toDouble();
+        return sum;
+      });
+    } catch (_) {
+      return 0;
+    }
   }
 }

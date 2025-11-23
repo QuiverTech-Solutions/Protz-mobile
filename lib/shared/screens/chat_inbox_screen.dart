@@ -215,15 +215,7 @@ class _ChatInboxScreenState extends ConsumerState<ChatInboxScreen>
             if (widget.isProvider) ...[
               const SizedBox(width: 8),
               ProviderStatusToggle(
-                isOnline: true,
-                onChanged: (value) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(value ? 'Status: Online' : 'Status: Offline'),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
+                //initialOnline: _isOnline,
               ),
             ],
           ],

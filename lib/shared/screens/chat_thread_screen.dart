@@ -300,15 +300,7 @@ class _ChatThreadScreenState extends ConsumerState<ChatThreadScreen> {
               ),
             ),
             ProviderStatusToggle(
-              isOnline: true,
-              onChanged: (value) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(value ? 'Status: Online' : 'Status: Offline'),
-                    duration: const Duration(seconds: 1),
-                  ),
-                );
-              },
+              
             ),
           ] else ...[
             GestureDetector(

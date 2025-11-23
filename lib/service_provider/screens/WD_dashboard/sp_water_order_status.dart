@@ -8,17 +8,22 @@ import '../../core/app_export.dart';
 
 import '../../widgets/order_progress_bar.dart';
 import '../../widgets/requester_info_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:protz/shared/providers/api_service_provider.dart';
+import '../../../shared/models/service_request.dart';
+import 'package:go_router/go_router.dart';
 
 class SPWaterOrderStatus extends StatefulWidget {
-  const SPWaterOrderStatus({super.key});
+  final ServiceRequest? request;
+  const SPWaterOrderStatus({super.key, this.request});
 
   @override
   State<SPWaterOrderStatus> createState() => _SPWaterOrderStatusState();
 }
 
 class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
-  final double _progress = 0.3;
-  final String _statusText = 'Driving to destination';
+  double _progress = 0.3;
+  String _statusText = 'Driving to destination';
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +43,7 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
                 Positioned.fill(child: _buildMap()),
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.25),
+                    color: Colors.black.withValues(alpha: 0.25),
                   ),
                 ),
                 Positioned(
@@ -90,28 +95,39 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
                 _buildProgressSection(),
                 SizedBox(height: ResponsiveExtension(16).h),
                 RequesterInfoCard(
-                  name: 'John Williams',
-                  priceText: 'GHS 276',
+                  name: widget.request?.assignedProvider?.name ?? 'Requester',
+                  priceText: 'GHS ${(widget.request?.estimatedCost ?? widget.request?.finalCost ?? 0).toStringAsFixed(0)}',
                   avatarImagePath: ImageConstant.imgAvatar,
-                  infoPrefix: 'To be delivered in-',
-                  infoHighlight: '2 hours',
-                  quantityText: '100 Gallons',
+                  infoPrefix: 'Status-',
+                  infoHighlight: widget.request?.status.name ?? '—',
+                  quantityText: '—',
                   onCallPressed: () {},
                   onChatPressed: () {},
                 ),
                 SizedBox(height: ResponsiveExtension(16).h),
                 SizedBox(
                   width: double.infinity,
-                  child: CustomButton(
-                    text: 'Cancel',
-                    backgroundColor: appTheme.white_A700,
-                    textColor: const Color(0xFFE30C00),
-                    borderColor: const Color(0xFFE30C00),
-                    borderRadius: ResponsiveExtension(12).h,
-                    height: ResponsiveExtension(50).h,
-                    isFullWidth: true,
-                    onPressed: () {},
-                  ),
+                  child: Consumer(builder: (context, ref, _) {
+                    return CustomButton(
+                      text: 'Cancel',
+                      backgroundColor: appTheme.white_A700,
+                      textColor: const Color(0xFFE30C00),
+                      borderColor: const Color(0xFFE30C00),
+                      borderRadius: ResponsiveExtension(12).h,
+                      height: ResponsiveExtension(50).h,
+                      isFullWidth: true,
+                      onPressed: () async {
+                        final api = ref.read(apiServiceProvider);
+                        final id = widget.request?.id;
+                        if (id == null) return;
+                        final res = await api.cancelServiceRequest(id);
+                        if (!context.mounted) return;
+                        if (res.success) {
+                          context.pop();
+                        }
+                      },
+                    );
+                  }),
                 ),
               ],
             );
@@ -125,12 +141,17 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
   Widget _buildMap() {
     return ClipRRect(
       borderRadius: BorderRadius.circular(ResponsiveExtension(12).h),
-      child: const LiveTrackingMap(isProviderContext: true),
+      child: LiveTrackingMap(isProviderContext: true, requestId: widget.request?.id),
     );
   }
 
 
   Widget _buildProgressSection() {
+    final s = widget.request?.status;
+    if (s != null) {
+      _progress = _progressFor(s);
+      _statusText = _statusLabel(s);
+    }
     return OrderProgressBar(
       progress: _progress,
       leftTitle: 'Vehicle pickup',
@@ -140,6 +161,44 @@ class _SPWaterOrderStatusState extends State<SPWaterOrderStatus> {
       fillColor: appTheme.light_blue_900,
       knobColor: Colors.grey[300],
     );
+  }
+
+  double _progressFor(ServiceRequestStatus s) {
+    switch (s) {
+      case ServiceRequestStatus.pending:
+        return 0.1;
+      case ServiceRequestStatus.assigned:
+        return 0.3;
+      case ServiceRequestStatus.inProgress:
+        return 0.6;
+      case ServiceRequestStatus.completed:
+        return 1.0;
+      case ServiceRequestStatus.cancelled:
+        return 0.0;
+      case ServiceRequestStatus.confirmed:
+        return 0.8;
+      case ServiceRequestStatus.failed:
+        return 0.0;
+    }
+  }
+
+  String _statusLabel(ServiceRequestStatus s) {
+    switch (s) {
+      case ServiceRequestStatus.pending:
+        return 'Awaiting assignment';
+      case ServiceRequestStatus.assigned:
+        return 'Driving to destination';
+      case ServiceRequestStatus.inProgress:
+        return 'In progress';
+      case ServiceRequestStatus.completed:
+        return 'Delivered';
+      case ServiceRequestStatus.cancelled:
+        return 'Cancelled';
+      case ServiceRequestStatus.confirmed:
+        return 'Confirmed';
+      case ServiceRequestStatus.failed:
+        return 'Failed';
+    }
   }
 
 }

@@ -16,6 +16,9 @@ import '../../../shared/models/service_provider.dart';
 import '../../../customer/core/utils/size_utils.dart' as cus_size;
 import '../../widgets/provider_status_toggle.dart';
 import '../../core/utils/nav_helper.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:protz/shared/providers/dashboard_provider.dart';
+import 'package:protz/shared/providers/api_service_provider.dart';
 //
 
 
@@ -160,20 +163,7 @@ class _SpWaterHomeState
           padding: EdgeInsets.only(left: ResponsiveExtension(12).h),
           onPressed: () {context.push(AppRoutes.notifications);},
         ),
-        ProviderStatusToggle(
-          isOnline: _isOnline,
-          onChanged: (value) {
-            setState(() {
-              _isOnline = value;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(value ? 'Status: Online' : 'Status: Offline'),
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          },
-        ),
+        ProviderStatusToggle(),
       ],
     );
   }
@@ -182,7 +172,20 @@ class _SpWaterHomeState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildStatsRow(),
+        Consumer(builder: (context, ref, _) {
+          final stats = ref.watch(dashboardProvider).data?.stats;
+          final todayDeliveries = stats?.activeOrders ?? 0;
+          final todayEarnings = 0;
+          final totalEarnings = (stats?.totalSpent ?? 0).round();
+          return Row(
+            spacing: ResponsiveExtension(12).h,
+            children: [
+              Expanded(child: _buildMetricCard(todayDeliveries, 'Today’s Deliveries')),
+              Expanded(child: _buildMetricCard(todayEarnings, 'Today’s Earnings', money: true)),
+              Expanded(child: _buildMetricCard(totalEarnings, 'Total Earnings', money: true)),
+            ],
+          );
+        }),
         SizedBox(height: ResponsiveExtension(12).h),
         _buildPreviewPopupButton(),
         SizedBox(height: ResponsiveExtension(20).h),
@@ -606,13 +609,14 @@ class _SpWaterHomeState
     );
   }
   Widget _buildRecentOrdersSection() {
-    final orders = _placeholderRecentOrders();
-    // Initialize the customer SizeUtils via its Sizer to ensure responsive units work
-    return cus_size.Sizer(
-      builder: (context, orientation, deviceType) {
-        return DashboardRecentOrders(recentOrders: orders);
-      },
-    );
+    return Consumer(builder: (context, ref, _) {
+      final orders = ref.watch(recentOrdersProvider);
+      return cus_size.Sizer(
+        builder: (context, orientation, deviceType) {
+          return DashboardRecentOrders(recentOrders: orders);
+        },
+      );
+    });
   }
 
   List<ServiceRequest> _placeholderRecentOrders() {

@@ -4,10 +4,15 @@ import '../core/app_export.dart';
 import '../widgets/sp_bottom_nav_bar.dart';
 import '../core/utils/nav_helper.dart';
 import '../widgets/provider_status_toggle.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:protz/shared/providers/api_service_provider.dart';
+import 'package:protz/shared/providers/dashboard_provider.dart';
 import '../../shared/utils/pages.dart';
 import '../../shared/widgets/custom_image_view.dart';
 import '../../shared/widgets/segmented_toggle.dart';
 import '../widgets/order_progress_bar.dart';
+import 'package:protz/shared/providers/provider_requests_provider.dart';
+import 'package:protz/shared/models/service_request.dart';
 
 class SPOrderRequests extends StatefulWidget {
   const SPOrderRequests({super.key});
@@ -33,16 +38,48 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
                 SizedBox(height: 12.h),
                 _buildToggle(),
                 Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
-                    child: Column(
-                      children: [
-                        _buildTowingCard(),
-                        SizedBox(height: 16.h),
-                        _buildWaterCard(),
-                      ],
-                    ),
-                  ),
+                  child: Consumer(builder: (context, ref, _) {
+                    final state = ref.watch(providerRequestsProvider);
+                    final isOngoing = _showOngoing;
+                    final items = isOngoing ? state.active : state.completed;
+                    if (state.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 24.h),
+                          child: Text(
+                            state.error ?? 'Insufficient permissions or failed to load requests',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(fontFamily: 'Poppins', fontSize: 12, color: Color(0xFFE30C00)),
+                          ),
+                        ),
+                      );
+                    }
+                    return SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(horizontal: 16.h, vertical: 12.h),
+                      child: Column(
+                        children: [
+                          for (final r in items) ...[
+                            _RequestCard(request: r, onTap: () {
+                              if (r.serviceType.toLowerCase().contains('water')) {
+                                context.goNamed(AppRouteNames.activeWaterJob);
+                              } else {
+                                context.go(AppRoutes.activeJob);
+                              }
+                            }),
+                            SizedBox(height: 16.h),
+                          ],
+                          if (items.isEmpty)
+                            Padding(
+                              padding: EdgeInsets.only(top: 24.h),
+                              child: Text(
+                                isOngoing ? 'No ongoing requests' : 'No completed requests',
+                                style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: appTheme.blue_gray_400),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  }),
                 ),
               ],
             ),
@@ -124,7 +161,7 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
               color: appTheme.white_A700,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8.h),
-                side: BorderSide(color: appTheme.light_blue_900.withOpacity(0.1), width: 1.0),
+                side: BorderSide(color: appTheme.light_blue_900.withValues(alpha: 0.1), width: 1.0),
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(8.h),
@@ -136,20 +173,7 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
             ),
           ),
           SizedBox(width: 12.h),
-          ProviderStatusToggle(
-            isOnline: _isOnline,
-            onChanged: (value) {
-              setState(() {
-                _isOnline = value;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(value ? 'Status: Online' : 'Status: Offline'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
-            },
-          ),
+          ProviderStatusToggle(),
         ],
       ),
     );
@@ -265,7 +289,7 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
                               padding: EdgeInsets.all(11.h),
                               child: Icon(Icons.phone, color: appTheme.white_A700, size: 24.h),
                             ),
-                            Container(height: 24.h, width: 1, color: appTheme.white_A700.withOpacity(0.4)),
+                            Container(height: 24.h, width: 1, color: appTheme.white_A700.withValues(alpha: 0.4)),
                             Padding(
                               padding: EdgeInsets.all(11.h),
                               child: Icon(Icons.chat_bubble_outline, color: appTheme.white_A700, size: 24.h),
@@ -487,7 +511,7 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
                               padding: EdgeInsets.all(11.h),
                               child: Icon(Icons.phone, color: appTheme.white_A700, size: 24.h),
                             ),
-                            Container(height: 24.h, width: 1, color: appTheme.white_A700.withOpacity(0.4)),
+                            Container(height: 24.h, width: 1, color: appTheme.white_A700.withValues(alpha: 0.4)),
                             Padding(
                               padding: EdgeInsets.all(11.h),
                               child: Icon(Icons.chat_bubble_outline, color: appTheme.white_A700, size: 24.h),
@@ -610,4 +634,93 @@ class _SPOrderRequestsState extends State<SPOrderRequests> {
     ),
     );
   }
+
+}
+
+class _RequestCard extends StatelessWidget {
+  final ServiceRequest request;
+  final VoidCallback onTap;
+  const _RequestCard({required this.request, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = theme.colorScheme;
+    final priceText = 'GHS ${(request.estimatedCost ?? request.finalCost ?? 0).toStringAsFixed(0)}';
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12.h),
+          border: Border.all(color: colorScheme.primary.withValues(alpha: 0.1), width: 4),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '#${request.serviceDetails['request_number'] ?? request.id}',
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w600, color: colorScheme.primary),
+              ),
+              SizedBox(height: 12.h),
+              Container(
+                decoration: BoxDecoration(color: colorScheme.surface, borderRadius: BorderRadius.circular(12.h)),
+                padding: EdgeInsets.symmetric(horizontal: 24.h, vertical: 12.h),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(request.serviceType, style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.primary)),
+                      SizedBox(height: 4.h),
+                      Text(request.pickupLocation.address, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w400, color: const Color(0xFF909090))),
+                    ]),
+                    Text(priceText, style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF009F22))),
+                  ],
+                ),
+              ),
+              SizedBox(height: 12.h),
+              OrderProgressBar(
+                progress: _progressFor(request.status),
+                trackColor: const Color(0xFFE6E0E9),
+                fillColor: const Color(0xFFFef7ff),
+                knobColor: const Color(0xFFFef7ff),
+              ),
+              SizedBox(height: 8.h),
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Vehicle pickup', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w400, color: const Color(0xFF2A2A2A))),
+                  Text(request.pickupLocation.address, style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w400, color: const Color(0xFF8F8F8F))),
+                ]),
+                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                  Text('Destination', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w400, color: const Color(0xFF2A2A2A))),
+                  Text(request.destinationLocation?.address ?? '-', style: TextStyle(fontFamily: 'Poppins', fontSize: 10, fontWeight: FontWeight.w400, color: const Color(0xFF8F8F8F))),
+                ]),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  double _progressFor(ServiceRequestStatus s) {
+    switch (s) {
+      case ServiceRequestStatus.pending:
+        return 0.1;
+      case ServiceRequestStatus.assigned:
+        return 0.3;
+      case ServiceRequestStatus.inProgress:
+        return 0.6;
+      case ServiceRequestStatus.completed:
+        return 1.0;
+      case ServiceRequestStatus.cancelled:
+        return 0.0;
+      case ServiceRequestStatus.confirmed:
+        return 0.8;
+      case ServiceRequestStatus.failed:
+        return 0.0;
+}
+}
 }
