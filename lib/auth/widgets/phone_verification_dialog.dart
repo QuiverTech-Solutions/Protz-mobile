@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -30,6 +32,7 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
   String? _errorMessage;
   int _resendTimer = 60;
   bool _canResend = false;
+  Timer? _resendTicker;
 
   String _formatPhoneNumber(String phoneNumber) {
     final clean = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
@@ -54,37 +57,49 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
     for (var focusNode in _focusNodes) {
       focusNode.dispose();
     }
+    _resendTicker?.cancel();
     super.dispose();
   }
 
   void _startResendTimer() {
+    _resendTicker?.cancel();
     setState(() {
       _canResend = false;
       _resendTimer = 60;
     });
-    
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted && _resendTimer > 0) {
+    _resendTicker = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) {
+        t.cancel();
+        return;
+      }
+      if (_resendTimer <= 1) {
+        t.cancel();
+        setState(() {
+          _resendTimer = 0;
+          _canResend = true;
+        });
+      } else {
         setState(() {
           _resendTimer--;
-        });
-        _startResendTimer();
-      } else if (mounted) {
-        setState(() {
-          _canResend = true;
         });
       }
     });
   }
 
   void _onOtpChanged(String value, int index) {
-    if (value.isNotEmpty && index < 5) {
-      _focusNodes[index + 1].requestFocus();
-    } else if (value.isEmpty && index > 0) {
-      _focusNodes[index - 1].requestFocus();
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length > 1) {
+      _fillOtpFromString(digits);
+      _autoSubmitIfComplete();
+      return;
     }
-    
-    // Clear error message when user starts typing
+    if (digits.isNotEmpty && index < 5) {
+      _focusNodes[index + 1].requestFocus();
+    } else if (digits.isEmpty && index > 0) {
+      _focusNodes[index - 1].requestFocus();
+    } else if (digits.isNotEmpty && index == 5) {
+      _autoSubmitIfComplete();
+    }
     if (_errorMessage != null) {
       setState(() {
         _errorMessage = null;
@@ -151,8 +166,6 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
       
       setState(() {
         _errorMessage = null;
-        _canResend = false;
-        _resendTimer = 60;
       });
       _startResendTimer();
       
@@ -177,6 +190,27 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  void _fillOtpFromString(String code) {
+    final digits = code.replaceAll(RegExp(r'[^0-9]'), '');
+    for (int i = 0; i < 6; i++) {
+      _otpControllers[i].text = i < digits.length ? digits[i] : '';
+    }
+    final nextIndex = _otpControllers.indexWhere((c) => c.text.isEmpty);
+    if (nextIndex == -1) {
+      _focusNodes[5].requestFocus();
+    } else {
+      _focusNodes[nextIndex].requestFocus();
+    }
+    setState(() {});
+  }
+
+  void _autoSubmitIfComplete() {
+    final allFilled = _otpControllers.every((c) => c.text.isNotEmpty);
+    if (allFilled && !_isLoading) {
+      _handleVerifyOTP();
     }
   }
 
@@ -309,14 +343,18 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: List.generate(6, (index) {
+                  final filled = _otpControllers[index].text.isNotEmpty;
+                  final hasError = _errorMessage != null;
                   return Container(
-                    width: 40,
-                    height: 48,
+                    width: 42,
+                    height: 50,
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: _otpControllers[index].text.isNotEmpty 
-                            ? const Color(0xFF007AFF) 
-                            : const Color(0xFFE5E5E5),
+                        color: hasError
+                            ? const Color(0xFFDC2626)
+                            : filled
+                                ? const Color(0xFF007AFF)
+                                : const Color(0xFFE5E5E5),
                         width: 1.5,
                       ),
                       borderRadius: BorderRadius.circular(8),
@@ -326,20 +364,27 @@ class _PhoneVerificationDialogState extends State<PhoneVerificationDialog> {
                       focusNode: _focusNodes[index],
                       textAlign: TextAlign.center,
                       keyboardType: TextInputType.number,
-                      maxLength: 1,
+                      textInputAction: index == 5 ? TextInputAction.done : TextInputAction.next,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: Color(0xFF1A1A1A),
                       ),
+                      autofillHints: const [AutofillHints.oneTimeCode],
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                       ],
                       decoration: const InputDecoration(
                         border: InputBorder.none,
-                        counterText: '',
                       ),
                       onChanged: (value) => _onOtpChanged(value, index),
+                      onSubmitted: (_) {
+                        if (index < 5) {
+                          _focusNodes[index + 1].requestFocus();
+                        } else {
+                          _autoSubmitIfComplete();
+                        }
+                      },
                     ),
                   );
                 }),
