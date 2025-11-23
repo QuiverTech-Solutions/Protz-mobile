@@ -39,6 +39,19 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   bool _confirmPasswordVisible = false;
   String? _errorMessage;
 
+  String _formatPhoneNumber(String phoneNumber) {
+    String cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    if (cleanPhone.startsWith('+233')) return cleanPhone;
+    if (cleanPhone.startsWith('233')) return '+$cleanPhone';
+    if (cleanPhone.startsWith('0') && cleanPhone.length >= 10) {
+      return '+233${cleanPhone.substring(1)}';
+    }
+    if (cleanPhone.length == 9) {
+      return '+233$cleanPhone';
+    }
+    return cleanPhone;
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -554,7 +567,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         ref.read(providerOnboardingProvider.notifier).setUserBasics(
               firstName: firstName,
               lastName: lastName,
-              phoneNumber: _phoneController.text.trim(),
+              phoneNumber: _formatPhoneNumber(_phoneController.text.trim()),
               email: _emailController.text.trim(),
               password: _passwordController.text,
             );
@@ -562,11 +575,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         return;
       }
 
+      final formattedPhone = _formatPhoneNumber(_phoneController.text.trim());
       final registerRequest = RegisterRequest(
         firstName: firstName,
         lastName: lastName,
         userType: widget.userType,
-        phoneNumber: _phoneController.text.trim(),
+        phoneNumber: formattedPhone,
         email: _emailController.text.trim(),
         password: _passwordController.text,
         gender: 'male',
@@ -575,8 +589,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
       final user = await _authService.register(registerRequest);
       if (mounted) {
-        await _authService.sendOtp(phoneNumber: user.phoneNumber);
-        _showPhoneVerificationDialog(user.phoneNumber);
+        await _authService.sendOtp(phoneNumber: formattedPhone);
+        _showPhoneVerificationDialog(formattedPhone);
       }
     } on AuthException catch (e) {
       developer.log('SignUpScreen: AuthException during registration: ${e.message}');
