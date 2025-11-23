@@ -13,6 +13,8 @@ class TowingServicesScreen3 extends StatefulWidget {
   final String? destination;
   final String? destinationLat;
   final String? destinationLng;
+  final String? pickupLat;
+  final String? pickupLng;
 
   const TowingServicesScreen3({
     super.key,
@@ -20,6 +22,8 @@ class TowingServicesScreen3 extends StatefulWidget {
     this.destination,
     this.destinationLat,
     this.destinationLng,
+    this.pickupLat,
+    this.pickupLng,
   });
 
   @override
@@ -465,6 +469,8 @@ class _TowingServicesScreen3State extends State<TowingServicesScreen3> {
       'images': _selectedImages,
       'destinationLat': widget.destinationLat,
       'destinationLng': widget.destinationLng,
+      'pickupLat': widget.pickupLat,
+      'pickupLng': widget.pickupLng,
     };
     context.go(AppRoutes.towingCheckout, extra: towingData);
   }

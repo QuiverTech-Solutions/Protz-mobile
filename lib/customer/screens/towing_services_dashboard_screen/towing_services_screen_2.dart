@@ -13,10 +13,14 @@ import '../../../shared/utils/env.dart';
 
 class TowingServicesScreen2 extends StatefulWidget {
   final String? pickupLocation;
+  final String? pickupLat;
+  final String? pickupLng;
   
   const TowingServicesScreen2({
     super.key,
     this.pickupLocation,
+    this.pickupLat,
+    this.pickupLng,
   });
 
   @override
@@ -37,24 +41,7 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
     zoom: 14.0,
   );
 
-  // Sample markers
-  final Set<Marker> _markers = {
-    Marker(
-      markerId: const MarkerId('church'),
-      position: const LatLng(5.6100, -0.1950),
-      infoWindow: const InfoWindow(title: "St. Paul's Roman Catholic Church"),
-    ),
-    Marker(
-      markerId: const MarkerId('salon'),
-      position: const LatLng(5.5980, -0.1800),
-      infoWindow: const InfoWindow(title: "Jenni's Hair Salon"),
-    ),
-    Marker(
-      markerId: const MarkerId('institute'),
-      position: const LatLng(5.5900, -0.1920),
-      infoWindow: const InfoWindow(title: "Accra Institute of Technology"),
-    ),
-  };
+  final Set<Marker> _markers = {};
 
   @override
   void dispose() {
@@ -279,7 +266,9 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
           final qp = lat.isNotEmpty && lng.isNotEmpty
               ? '?pickupLocation=${Uri.encodeComponent(pickupLocation)}&destination=${Uri.encodeComponent(destination)}&destinationLat=$lat&destinationLng=$lng'
               : '?pickupLocation=${Uri.encodeComponent(pickupLocation)}&destination=${Uri.encodeComponent(destination)}';
-          context.go('${AppRoutes.towingServicesScreen3}$qp');
+          final pLat = (widget.pickupLat ?? '').isNotEmpty ? '&pickupLat=${Uri.encodeComponent(widget.pickupLat!)}' : '';
+          final pLng = (widget.pickupLng ?? '').isNotEmpty ? '&pickupLng=${Uri.encodeComponent(widget.pickupLng!)}' : '';
+          context.go('${AppRoutes.towingServicesScreen3}$qp$pLat$pLng');
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B7A8A),
@@ -411,8 +400,18 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
 
   void _updateMapToSelected() {
     if (_mapController == null || _selectedLat == null || _selectedLng == null) return;
+    final pos = LatLng(_selectedLat!, _selectedLng!);
+    setState(() {
+      _markers
+        ..clear()
+        ..add(Marker(
+          markerId: const MarkerId('destination'),
+          position: pos,
+          infoWindow: InfoWindow(title: _destinationController.text.trim().isNotEmpty ? _destinationController.text.trim() : 'Destination'),
+        ));
+    });
     _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
-      target: LatLng(_selectedLat!, _selectedLng!),
+      target: pos,
       zoom: 15,
     )));
   }

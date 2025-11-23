@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:dio/dio.dart';
+import '../../../shared/utils/env.dart';
 import '../../../shared/utils/pages.dart';
 import 'widgets/towtruck_entry.dart';
 import '../../../shared/providers/api_service_provider.dart';
@@ -21,18 +23,8 @@ class _TowingCheckoutState extends State<TowingCheckout> {
   late Map<String, dynamic> data;
   int selectedOptionIndex = -1;
   GoogleMapController? _mapController;
-  final Set<Marker> _markers = {
-    const Marker(
-      markerId: MarkerId('pickup'),
-      position: LatLng(5.6037, -0.1870),
-      infoWindow: InfoWindow(title: 'Accra New Town'),
-    ),
-    const Marker(
-      markerId: MarkerId('destination'),
-      position: LatLng(5.6140, -0.2460),
-      infoWindow: InfoWindow(title: 'Mechanic shop'),
-    ),
-  };
+  final Set<Marker> _markers = {};
+  final Set<Polyline> _polylines = {};
 
   @override
   void initState() {
@@ -49,6 +41,7 @@ class _TowingCheckoutState extends State<TowingCheckout> {
       'destinationLat': 5.6140,
       'destinationLng': -0.2460,
     };
+    _configureRoute();
   }
 
   @override
@@ -58,30 +51,26 @@ class _TowingCheckoutState extends State<TowingCheckout> {
       body: Stack(
         children: [
           // Map background
-          /*Positioned.fill(
+          Positioned.fill(
             child: GoogleMap(
-              initialCameraPosition: const CameraPosition(
-                target: LatLng(5.6037, -0.1870),
+              initialCameraPosition: CameraPosition(
+                target: LatLng(
+                  _asDouble(data['pickupLat'], 5.6037),
+                  _asDouble(data['pickupLng'], -0.1870),
+                ),
                 zoom: 12.5,
               ),
               myLocationButtonEnabled: false,
               myLocationEnabled: false,
               zoomControlsEnabled: false,
-              polylines: {
-                const Polyline(
-                  polylineId: PolylineId('route'),
-                  points: [
-                    LatLng(5.6037, -0.1870),
-                    LatLng(5.6140, -0.2460),
-                  ],
-                  color: Color(0xFF9AA4AA),
-                  width: 4,
-                ),
-              },
+              polylines: _polylines,
               markers: _markers,
-              onMapCreated: (c) => _mapController = c,
+              onMapCreated: (c) {
+                _mapController = c;
+                _fitBounds();
+              },
             ),
-          ),*/
+          ),
 
           // Top actions overlay
           SafeArea(
@@ -165,10 +154,12 @@ class _TowingCheckoutState extends State<TowingCheckout> {
                           // Trigger load when we have serviceTypeId
                           final towingTypeId = towingType?.id;
                           if (towingTypeId != null && !providersState.isLoading && providersState.providers.isEmpty) {
+                            final lat = _asDouble(data['pickupLat'], 5.6037);
+                            final lng = _asDouble(data['pickupLng'], -0.1870);
                             ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
                               serviceTypeId: towingTypeId,
-                              latitude: 5.6037,
-                              longitude: -0.1870,
+                              latitude: lat,
+                              longitude: lng,
                               limit: 20,
                             );
                           }
@@ -242,6 +233,38 @@ class _TowingCheckoutState extends State<TowingCheckout> {
         ],
       ),
     );
+  }
+
+  void _configureRoute() {
+    final pickupLat = _asDouble(data['pickupLat'], 5.6037);
+    final pickupLng = _asDouble(data['pickupLng'], -0.1870);
+    final destLat = _asDouble(data['destinationLat'], 5.6140);
+    final destLng = _asDouble(data['destinationLng'], -0.2460);
+    final pickup = LatLng(pickupLat, pickupLng);
+    final dest = LatLng(destLat, destLng);
+    _markers
+      ..clear()
+      ..add(Marker(markerId: const MarkerId('pickup'), position: pickup, infoWindow: InfoWindow(title: (data['from'] ?? '').toString())))
+      ..add(Marker(markerId: const MarkerId('destination'), position: dest, infoWindow: InfoWindow(title: (data['to'] ?? '').toString())));
+    _polylines.clear();
+    _loadRoadPolyline(pickup, dest);
+  }
+
+  void _fitBounds() {
+    final pickupLat = _asDouble(data['pickupLat'], 5.6037);
+    final pickupLng = _asDouble(data['pickupLng'], -0.1870);
+    final destLat = _asDouble(data['destinationLat'], 5.6140);
+    final destLng = _asDouble(data['destinationLng'], -0.2460);
+    final southWest = LatLng(
+      pickupLat < destLat ? pickupLat : destLat,
+      pickupLng < destLng ? pickupLng : destLng,
+    );
+    final northEast = LatLng(
+      pickupLat > destLat ? pickupLat : destLat,
+      pickupLng > destLng ? pickupLng : destLng,
+    );
+    final bounds = LatLngBounds(southwest: southWest, northeast: northEast);
+    _mapController?.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
   }
 
   // Provider dataset and UI
@@ -360,10 +383,10 @@ class _TowingCheckoutState extends State<TowingCheckout> {
           }
           // Compose base service request
           final now = DateTime.now().toUtc().toIso8601String();
-          final pickupLat = (data['pickupLat'] as num?)?.toDouble() ?? 5.6037;
-          final pickupLng = (data['pickupLng'] as num?)?.toDouble() ?? -0.1870;
-          final destLat = (data['destinationLat'] as num?)?.toDouble() ?? 5.6140;
-          final destLng = (data['destinationLng'] as num?)?.toDouble() ?? -0.2460;
+          final pickupLat = _asDouble(data['pickupLat'], 5.6037);
+          final pickupLng = _asDouble(data['pickupLng'], -0.1870);
+          final destLat = _asDouble(data['destinationLat'], 5.6140);
+          final destLng = _asDouble(data['destinationLng'], -0.2460);
           final baseReq = {
             'profile_id': profileId,
             'service_type_id': towingType.id,
@@ -458,4 +481,87 @@ class _TowingCheckoutState extends State<TowingCheckout> {
       ),
     );
   }
-}
+
+  double _asDouble(dynamic v, double fallback) {
+    if (v is num) return v.toDouble();
+    if (v is String) {
+      final parsed = double.tryParse(v);
+      if (parsed != null) return parsed;
+    }
+    return fallback;
+  }
+
+  Future<void> _loadRoadPolyline(LatLng origin, LatLng destination) async {
+    try {
+      if (Env.googleMapsApiKey.isNotEmpty) {
+        final dio = Dio(BaseOptions(headers: {'User-Agent': 'protz-app'}));
+        final resp = await dio.get(
+          'https://maps.googleapis.com/maps/api/directions/json',
+          queryParameters: {
+            'origin': '${origin.latitude},${origin.longitude}',
+            'destination': '${destination.latitude},${destination.longitude}',
+            'mode': 'driving',
+            'key': Env.googleMapsApiKey,
+          },
+        );
+        final routes = resp.data is Map<String, dynamic> ? (resp.data['routes'] as List?) : null;
+        if (routes != null && routes.isNotEmpty) {
+          final overview = routes.first['overview_polyline'] as Map<String, dynamic>?;
+          final pointsStr = overview?['points'] as String?;
+          final points = pointsStr != null ? _decodePolyline(pointsStr) : <LatLng>[];
+          if (points.isNotEmpty) {
+            setState(() {
+              _polylines.add(Polyline(
+                polylineId: const PolylineId('route'),
+                points: points,
+                color: const Color(0xFF1B7A8A),
+                width: 5,
+              ));
+            });
+            return;
+          }
+        }
+      }
+    } catch (_) {}
+    setState(() {
+      _polylines.add(Polyline(
+        polylineId: const PolylineId('route'),
+        points: [origin, destination],
+        color: const Color(0xFF9AA4AA),
+        width: 4,
+      ));
+    });
+  }
+
+  List<LatLng> _decodePolyline(String encoded) {
+    final List<LatLng> poly = [];
+    int index = 0, len = encoded.length;
+    int lat = 0, lng = 0;
+
+    while (index < len) {
+      int b, shift = 0, result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      final dlat = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+      do {
+        b = encoded.codeUnitAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+      final dlng = ((result & 1) != 0) ? ~(result >> 1) : (result >> 1);
+      lng += dlng;
+
+      final latD = lat / 1e5;
+      final lngD = lng / 1e5;
+      poly.add(LatLng(latD, lngD));
+    }
+    return poly;
+  }
+  }

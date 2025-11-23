@@ -326,6 +326,8 @@ class AppRouter {
         pageBuilder: (context, state) => CustomTransitions.slideTransition(
           child: TowingServicesScreen2(
             pickupLocation: state.uri.queryParameters['pickupLocation'] ?? '',
+            pickupLat: state.uri.queryParameters['pickupLat'],
+            pickupLng: state.uri.queryParameters['pickupLng'],
           ),
           state: state,
         ),
@@ -338,6 +340,10 @@ class AppRouter {
           child: TowingServicesScreen3(
             pickupLocation: state.uri.queryParameters['pickupLocation'] ?? '',
             destination: state.uri.queryParameters['destination'] ?? '',
+            destinationLat: state.uri.queryParameters['destinationLat'],
+            destinationLng: state.uri.queryParameters['destinationLng'],
+            pickupLat: state.uri.queryParameters['pickupLat'],
+            pickupLng: state.uri.queryParameters['pickupLng'],
           ),
           state: state,
         ),
