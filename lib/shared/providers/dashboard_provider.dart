@@ -1,3 +1,4 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../models/dashboard_data.dart';
 import '../models/service_request.dart';
@@ -50,6 +51,8 @@ class DashboardState {
   /// Check if we're in an error state
   bool get hasError => error != null;
 }
+
+final onlineStatusProvider = StateProvider<bool>((ref) => false);
 
 /// Dashboard data provider with automatic refresh and error handling
 /// 

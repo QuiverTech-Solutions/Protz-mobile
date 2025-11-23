@@ -58,7 +58,7 @@ class ProviderRequests extends _$ProviderRequests {
         );
         return;
       }
-      final data = profile.data ?? const <String, dynamic>{};
+      /*final data = profile.data ?? const <String, dynamic>{};
       final bool isActive = data['is_active'] == true;
       final String verification = (data['verification_status'] ?? '').toString();
       final bool isApproved = verification.toLowerCase() == 'approved';
@@ -70,7 +70,7 @@ class ProviderRequests extends _$ProviderRequests {
               : 'Your provider verification is not approved.',
         );
         return;
-      }
+      }*/
       final assigned = await api.getAssignedToMeRequests(status: 'assigned');
       final inProgress = await api.getAssignedToMeRequests(status: 'in_progress');
       if (assigned.success || inProgress.success) {
