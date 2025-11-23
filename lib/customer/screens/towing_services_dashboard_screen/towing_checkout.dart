@@ -25,6 +25,7 @@ class _TowingCheckoutState extends State<TowingCheckout> {
   GoogleMapController? _mapController;
   final Set<Marker> _markers = {};
   final Set<Polyline> _polylines = {};
+  bool _providersRequested = false;
 
   @override
   void initState() {
@@ -153,15 +154,18 @@ class _TowingCheckoutState extends State<TowingCheckout> {
 
                           // Trigger load when we have serviceTypeId
                           final towingTypeId = towingType?.id;
-                          if (towingTypeId != null && !providersState.isLoading && providersState.providers.isEmpty) {
-                            final lat = _asDouble(data['pickupLat'], 5.6037);
-                            final lng = _asDouble(data['pickupLng'], -0.1870);
-                            ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
-                              serviceTypeId: towingTypeId,
-                              latitude: lat,
-                              longitude: lng,
-                              limit: 20,
-                            );
+                          if (!_providersRequested && towingTypeId != null && !providersState.isLoading && providersState.providers.isEmpty) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              final lat = _asDouble(data['pickupLat'], 5.6037);
+                              final lng = _asDouble(data['pickupLng'], -0.1870);
+                              ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
+                                serviceTypeId: towingTypeId,
+                                latitude: lat,
+                                longitude: lng,
+                                limit: 20,
+                              );
+                              _providersRequested = true;
+                            });
                           }
 
                           if (types.isLoading || providersState.isLoading) {

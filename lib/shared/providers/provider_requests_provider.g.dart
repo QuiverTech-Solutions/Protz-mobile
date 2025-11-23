@@ -6,7 +6,7 @@ part of 'provider_requests_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$providerRequestsHash() => r'70c3b3dc95c86e1dc2bb200d121f974fa48316d2';
+String _$providerRequestsHash() => r'0ecd73b25f557e925a80381fd507214f356e450a';
 
 /// See also [ProviderRequests].
 @ProviderFor(ProviderRequests)

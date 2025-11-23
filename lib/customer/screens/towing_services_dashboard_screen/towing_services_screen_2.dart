@@ -34,6 +34,7 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
   Timer? _debounce;
   double? _selectedLat;
   double? _selectedLng;
+  bool _providersRequested = false;
   
   // Default location (Accra, Ghana)
   static const CameraPosition _initialPosition = CameraPosition(
@@ -170,13 +171,16 @@ class _TowingServicesScreen2State extends State<TowingServicesScreen2> {
               final providersState = ref.watch(serviceProvidersProvider);
 
               final towingTypeId = towingType?.id;
-              if (towingTypeId != null && providersState.providers.isEmpty && !providersState.isLoading) {
-                ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
-                  serviceTypeId: towingTypeId,
-                  latitude: 5.6037,
-                  longitude: -0.1870,
-                  limit: 10,
-                );
+              if (!_providersRequested && towingTypeId != null && providersState.providers.isEmpty && !providersState.isLoading) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref.read(serviceProvidersProvider.notifier).loadActiveProvidersByTypeId(
+                    serviceTypeId: towingTypeId,
+                    latitude: 5.6037,
+                    longitude: -0.1870,
+                    limit: 10,
+                  );
+                  _providersRequested = true;
+                });
               }
               final text = providersState.isLoading
                   ? 'Loading nearby providers…'

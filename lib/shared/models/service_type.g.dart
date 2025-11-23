@@ -12,7 +12,7 @@ ServiceTypePublic _$ServiceTypePublicFromJson(Map<String, dynamic> json) =>
       name: json['name'] as String,
       code: json['code'] as String,
       icon: json['icon'] as String?,
-      isActive: json['isActive'] as bool,
+      isActive: json['is_active'] as bool,
     );
 
 Map<String, dynamic> _$ServiceTypePublicToJson(ServiceTypePublic instance) =>
@@ -21,5 +21,5 @@ Map<String, dynamic> _$ServiceTypePublicToJson(ServiceTypePublic instance) =>
       'name': instance.name,
       'code': instance.code,
       'icon': instance.icon,
-      'isActive': instance.isActive,
+      'is_active': instance.isActive,
     };

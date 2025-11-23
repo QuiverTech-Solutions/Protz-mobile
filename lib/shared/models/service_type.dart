@@ -8,6 +8,7 @@ class ServiceTypePublic {
   final String name;
   final String code;
   final String? icon;
+  @JsonKey(name: 'is_active')
   final bool isActive;
 
   const ServiceTypePublic({
@@ -19,5 +20,6 @@ class ServiceTypePublic {
   });
 
   factory ServiceTypePublic.fromJson(Map<String, dynamic> json) => _$ServiceTypePublicFromJson(json);
+
   Map<String, dynamic> toJson() => _$ServiceTypePublicToJson(this);
 }
