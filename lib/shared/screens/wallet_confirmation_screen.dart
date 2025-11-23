@@ -36,7 +36,7 @@ class _WalletConfirmationScreenState extends ConsumerState<WalletConfirmationScr
                     const SizedBox(height: 20),
                     _amountCard(),
                     const SizedBox(height: 32),
-                    const Text('Enter your Protz Wallet Pin to Continue', style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E))),
+                    const Text('Enter your WATO Wallet Pin to Continue', style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E))),
                     const SizedBox(height: 12),
                     _pinBoxes(),
                   ],
@@ -136,7 +136,7 @@ class _WalletConfirmationScreenState extends ConsumerState<WalletConfirmationScr
                 final profileId = (prof.data!['id'] ?? '').toString();
                 if (profileId.isNotEmpty) {
                   await api.createWallet(data: {
-                    'wallet_name': 'Protz Wallet',
+                    'wallet_name': 'WATO Wallet',
                     'profile_id': profileId,
                     'wallet_provider': 'Paystack',
                     'wallet_type': 'mobile_money',
