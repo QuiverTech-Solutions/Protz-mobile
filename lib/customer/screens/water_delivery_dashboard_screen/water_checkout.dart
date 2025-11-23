@@ -28,13 +28,7 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
     target: LatLng(AppConstants.defaultLatitude, AppConstants.defaultLongitude),
     zoom: 12.5,
   );
-  final Set<Marker> _markers =  {
-    Marker(
-      markerId: MarkerId('delivery'),
-      position: LatLng(AppConstants.defaultLatitude, AppConstants.defaultLongitude),
-      infoWindow: InfoWindow(title: 'Delivery area'),
-    ),
-  };
+  final Set<Marker> _markers = {};
 
   @override
   void initState() {
@@ -45,6 +39,7 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
       'quantity': '0',
       'instructions': '',
     };
+    _setDestinationMarkerIfAvailable();
   }
 
   @override
@@ -61,7 +56,11 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
               myLocationButtonEnabled: false,
               myLocationEnabled: false,
               zoomControlsEnabled: false,
-              onMapCreated: (c) => _mapController = c,
+              onMapCreated: (c) {
+                _mapController = c;
+                _setDestinationMarkerIfAvailable();
+                _animateToDestinationIfAvailable();
+              },
             ),
           ),
           // Top actions overlay
@@ -221,10 +220,18 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
       child: Row(
         children: [
           InkWell(
-            onTap: () {
-              final pickup = Uri.encodeComponent('${data['pickupLocation'] ?? ''}');
-              context.go('${AppRoutes.waterDeliveryScreen2}?pickupLocation=$pickup&destination=${Uri.encodeComponent('${data['destination'] ?? ''}')}');
-            },
+          onTap: () {
+            final pickup = Uri.encodeComponent('${data['pickupLocation'] ?? ''}');
+            final dest = Uri.encodeComponent('${data['destination'] ?? ''}');
+            final lat = (data['destinationLat'] ?? '').toString();
+            final lng = (data['destinationLng'] ?? '').toString();
+            final hasCoords = lat.isNotEmpty && lng.isNotEmpty;
+            final baseUrl = '${AppRoutes.waterDeliveryScreen2}?pickupLocation=$pickup&destination=$dest';
+            final withCoords = hasCoords
+                ? '$baseUrl&destinationLat=${Uri.encodeComponent(lat)}&destinationLng=${Uri.encodeComponent(lng)}'
+                : baseUrl;
+            context.go(withCoords);
+          },
             child: const Icon(Icons.arrow_back, color: Color(0xFF086788)),
           ),
           const SizedBox(width: 6),
@@ -308,8 +315,8 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
             'pickup_latitude': AppConstants.defaultLatitude,
             'pickup_longitude': AppConstants.defaultLongitude,
             'destination_address': (data['destination'] ?? '').toString(),
-            'destination_lat': AppConstants.defaultLatitude,
-            'destination_lng': AppConstants.defaultLongitude,
+            'destination_lat': double.tryParse((data['destinationLat'] ?? '').toString()) ?? AppConstants.defaultLatitude,
+            'destination_lng': double.tryParse((data['destinationLng'] ?? '').toString()) ?? AppConstants.defaultLongitude,
             'special_instructions': (data['instructions'] ?? '').toString(),
             'requested_at': now,
           };
@@ -354,5 +361,40 @@ class _WaterCheckoutState extends ConsumerState<WaterCheckout> {
         ),
       ),
     );
+  }
+
+  void _setDestinationMarkerIfAvailable() {
+    final lat = _asDouble(data['destinationLat']);
+    final lng = _asDouble(data['destinationLng']);
+    if (lat == null || lng == null) return;
+    final pos = LatLng(lat, lng);
+    setState(() {
+      _markers
+        ..clear()
+        ..add(Marker(
+          markerId: const MarkerId('destination'),
+          position: pos,
+          infoWindow: InfoWindow(title: (data['destination'] ?? '').toString()),
+        ));
+    });
+  }
+
+  void _animateToDestinationIfAvailable() {
+    if (_mapController == null) return;
+    final lat = _asDouble(data['destinationLat']);
+    final lng = _asDouble(data['destinationLng']);
+    if (lat == null || lng == null) return;
+    _mapController!.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(
+      target: LatLng(lat, lng),
+      zoom: 14.5,
+    )));
+  }
+
+  double? _asDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    final s = v.toString();
+    if (s.isEmpty) return null;
+    return double.tryParse(s);
   }
 }

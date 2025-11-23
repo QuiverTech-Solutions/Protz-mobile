@@ -11,11 +11,15 @@ import '../../../shared/providers/service_types_provider.dart';
 class WaterDeliveryScreen2 extends StatefulWidget {
   final String? pickupLocation;
   final String? destination;
+  final String? destinationLat;
+  final String? destinationLng;
 
   const WaterDeliveryScreen2({
     super.key,
     this.pickupLocation,
     this.destination,
+    this.destinationLat,
+    this.destinationLng,
   });
 
   @override
@@ -392,6 +396,8 @@ class _WaterDeliveryScreen2State extends State<WaterDeliveryScreen2> {
             final data = {
               'pickupLocation': widget.pickupLocation ?? '',
               'destination': widget.destination ?? '',
+              'destinationLat': widget.destinationLat,
+              'destinationLng': widget.destinationLng,
               'quantity': selectedVehicle ?? '0',
               'instructions': _instructionsController.text.trim(),
               'deliveryMethod': selectedDeliveryMethod ?? 'polytank',

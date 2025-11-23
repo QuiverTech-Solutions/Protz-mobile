@@ -451,7 +451,10 @@ class AppRouter {
         name: AppRouteNames.waterDeliveryScreen2,
         pageBuilder: (context, state) => CustomTransitions.slideTransition(
           child: WaterDeliveryScreen2(
+            pickupLocation: state.uri.queryParameters['pickupLocation'] ?? '',
             destination: state.uri.queryParameters['destination'] ?? '',
+            destinationLat: state.uri.queryParameters['destinationLat'],
+            destinationLng: state.uri.queryParameters['destinationLng'],
           ),
           state: state,
         ),

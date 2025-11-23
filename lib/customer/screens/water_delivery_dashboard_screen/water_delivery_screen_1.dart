@@ -224,7 +224,13 @@ class _WaterDeliveryScreen1State extends State<WaterDeliveryScreen1> {
           // Navigate to next screen
           final pickupLocation = '';
           final destination = _destinationController.text.trim();
-          context.go('/water-delivery-screen2?pickupLocation=${Uri.encodeComponent(pickupLocation)}&destination=${Uri.encodeComponent(destination)}');
+          final latStr = _selectedLat != null ? _selectedLat!.toString() : null;
+          final lngStr = _selectedLng != null ? _selectedLng!.toString() : null;
+          final baseUrl = '/water-delivery-screen2?pickupLocation=${Uri.encodeComponent(pickupLocation)}&destination=${Uri.encodeComponent(destination)}';
+          final withCoords = latStr != null && lngStr != null
+              ? '$baseUrl&destinationLat=${Uri.encodeComponent(latStr)}&destinationLng=${Uri.encodeComponent(lngStr)}'
+              : baseUrl;
+          context.go(withCoords);
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B7A8A),
