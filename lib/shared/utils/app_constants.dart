@@ -1,6 +1,6 @@
 class AppConstants {
   // App Information
-  static const String appName = 'Protz';
+  static const String appName = 'WATO';
   static const String appVersion = '1.0.0';
   static const String appDescription = '24/7 towing and water delivery services';
 

@@ -17,7 +17,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<OnboardingData> _pages = [
     OnboardingData(
-      title: 'Welcome to Protz',
+      title: 'Welcome to WATO',
       description: '24/7 towing and water delivery. Help is always just a tap away!',
       illustrationType: IllustrationType.welcome,
     ),

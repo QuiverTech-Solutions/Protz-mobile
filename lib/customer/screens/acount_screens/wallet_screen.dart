@@ -101,7 +101,7 @@ class _WalletScreenState extends State<WalletScreen> {
               child: Row(
                 children: [
                   Text(
-                    'Your Protz Wallet',
+                    'Your WATO Wallet',
                     style: TextStyle(
                       fontFamily: 'Poppins',
                       fontSize: 16,

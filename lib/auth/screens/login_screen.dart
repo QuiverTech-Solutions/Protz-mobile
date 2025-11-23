@@ -252,7 +252,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           const SizedBox(height: 8),
                           const Text(
-                            'Welcome back to Protz. Login to continue.',
+                            'Welcome back to WATO. Login to continue.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontFamily: 'Poppins',

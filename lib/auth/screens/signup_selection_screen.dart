@@ -40,7 +40,7 @@ class _SignupSelectionScreenState extends State<SignupSelectionScreen> {
                     ),
                     const SizedBox(height: 8),
                     const Text(
-                      'Welcome to Protz! Create an account to get started.',
+                      'Welcome to WATO! Create an account to get started.',
                       style: TextStyle(
                         fontFamily: 'Poppins',
                         fontSize: 12,

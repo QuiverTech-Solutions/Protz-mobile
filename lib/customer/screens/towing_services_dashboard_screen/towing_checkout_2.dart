@@ -168,7 +168,7 @@ class _TowingCheckout2State extends ConsumerState<TowingCheckout2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Pay with Protz Wallet', style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E))),
+        const Text('Pay with WATO Wallet', style: TextStyle(fontSize: 14, color: Color(0xFF1E1E1E))),
         const SizedBox(height: 8),
         InkWell(
           onTap: () => setState(() => _selectedPaymentIndex = 0),
@@ -187,7 +187,7 @@ class _TowingCheckout2State extends ConsumerState<TowingCheckout2> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Protz Wallet Account', style: TextStyle(color: Color(0xFF086788), fontSize: 14)),
+                      const Text('WATO Wallet Account', style: TextStyle(color: Color(0xFF086788), fontSize: 14)),
                       Text('GHS ${walletAmount.toStringAsFixed(2)}', style: const TextStyle(color: Color(0xFF086788), fontSize: 14, fontWeight: FontWeight.w500)),
                     ],
                   ),

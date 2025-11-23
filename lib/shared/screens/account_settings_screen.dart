@@ -24,7 +24,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
   int _currentNavIndex = 3;
   bool _isOnline = true;
   String _name = 'Account User';
-  String _email = 'example@protz.com';
+  String _email = 'example@wato.com';
   bool _pushEnabled = true;
 
   @override
@@ -311,7 +311,7 @@ class _AccountSettingsScreenState extends ConsumerState<AccountSettingsScreen> {
           _buildSectionTitle('WALLET'),
           _buildListItem(
             icon: Icons.account_balance_wallet_outlined,
-            title: 'Protz Wallet Setup',
+            title: 'WATO Wallet Setup',
             onTap: () { context.push(AppRoutes.providerWalletSetup); },
           ),
           SizedBox(height: 24.h),

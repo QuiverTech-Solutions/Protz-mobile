@@ -70,7 +70,7 @@ class HelpSupportScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Contact Protz Support',
+          'Contact WATO Support',
           style: TextStyle(
             fontFamily: 'Poppins',
             fontSize: 18,

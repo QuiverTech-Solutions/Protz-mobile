@@ -162,7 +162,7 @@ class _CustomerServiceChatScreenState extends ConsumerState<CustomerServiceChatS
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Protz',
+                  'WATO',
                   style: TextStyle(
                     fontFamily: 'Poppins',
                     fontSize: 16,

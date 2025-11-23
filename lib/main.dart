@@ -23,7 +23,7 @@ class ProtzApp extends StatelessWidget {
     return Sizer(
       builder: (context, orientation, deviceType) {
         return MaterialApp.router(
-          title: 'Protz',
+          title: 'WATO',
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
