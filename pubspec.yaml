@@ -58,6 +58,8 @@ dependencies:
   flutter_riverpod: ^2.4.9
   riverpod_annotation: ^2.3.3
 
+  # Flutter icons
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -75,6 +77,8 @@ dev_dependencies:
   
   # Riverpod code generation
   riverpod_generator: ^2.3.9
+  flutter_launcher_icons: ^0.14.4
+
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
