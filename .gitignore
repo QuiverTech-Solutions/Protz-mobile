@@ -24,6 +24,11 @@ migrate_working_dir/
 #.vscode/
 
 # Flutter/Dart/Pub related
+endpoints_documentation/
+.trae/
+.figma/
+protz_api_docs.md
+settings.json
 **/doc/api/
 **/ios/Flutter/.last_build_id
 .dart_tool/
